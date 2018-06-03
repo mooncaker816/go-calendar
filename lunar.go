@@ -147,6 +147,7 @@ func (ly *LunarYear) moonShuoes() {
 			// fmt.Println(ly.Shuoes[i][0])
 		}
 		if ly.shuoCnt[i] >= 13 { //冬至之间是否有13个朔日
+			// if sInDZs(ly.Shuoes[i][13], dz0, dz1) {
 			ly.leap[i] = true
 		}
 	}
@@ -380,7 +381,7 @@ func (ly LunarYear) Stat() {
 }
 
 func beijingTime(jd float64) float64 {
-	return jd + deltat(jd) + float64(8)/24
+	return jd - deltat(jd) + float64(8)/24
 }
 
 // 判断气相对于朔的关系，用于判断具体闰哪一个月
@@ -424,6 +425,7 @@ func shuoC(shuo float64, a []struct{ jd, delta float64 }) float64 {
 		} else if key > a[mid].jd {
 			lo = mid + 1
 		} else {
+			// fmt.Println(shuo, shuo+a[mid].delta)
 			return shuo + a[mid].delta
 		}
 	}

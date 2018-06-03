@@ -44,10 +44,10 @@ func deltat(jde float64) float64 {
 		return dt.PolyBefore948(jd2year(jde)).Day()
 	case year >= 948 && year < 1600:
 		return dt.Poly948to1600(jd2year(jde)).Day()
-	default:
-		//  year >= 1600 && year <= y+50:
+	case year >= 1600 && year <= 2100:
 		return dt.Interp10A(jde).Day()
-		// default:
-		// 	return dt.PolyAfter2000(jd2year(jde)).Day()
+	default:
+		// return dt.PolyAfter2000(jd2year(jde)).Day()
+		return unit.Time(float64(31*(year-1820)*(year-1820))/10000 - float64(20)).Day()
 	}
 }
