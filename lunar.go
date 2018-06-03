@@ -62,12 +62,12 @@ type LunarYear struct {
 
 // NatureYear 两个农历自然年
 type NatureYear struct {
-	Terms   [2][]float64  // 两个自然年包含的节气
-	Shuoes  [2][]float64  // 两个自然年包含的朔日
-	shuoCnt [2]int        // 两个自然年包含的朔日的个数
-	dzs     [3]float64    // 划分两个自然年的三个冬至
-	leap    [2]bool       // 两个自然年中是否有闰月
-	months  *[]LunarMonth // 两个自然年的所有月份
+	Terms  [2][]float64 // 两个自然年包含的节气
+	Shuoes [2][]float64 // 两个自然年包含的朔日
+	// shuoCnt [2]int        // 两个自然年包含的朔日的个数
+	dzs    [3]float64    // 划分两个自然年的三个冬至
+	leap   [2]bool       // 两个自然年中是否有闰月
+	months *[]LunarMonth // 两个自然年的所有月份
 }
 
 // GenLunarYear generates Lunar Year
@@ -124,7 +124,7 @@ func (ly *LunarYear) moonShuoes() {
 		nm0 := newmoonI(jd0, 0, 0)
 		nm0 = shuoC(nm0, shuoCorrect)
 
-		ly.shuoCnt[i] = 0
+		// ly.shuoCnt[i] = 0
 		if !sLEq(nm0, jd0) { // nm0>jd0
 			// if math.Floor(nm0+0.5) > math.Floor(beijingTime(jd0)+0.5) {
 			jd0 -= 29.5306
@@ -139,15 +139,15 @@ func (ly *LunarYear) moonShuoes() {
 			// shuop := math.Floor(shuo + 0.5)
 			// if shuo >= jd0 && shuo < jd1 {
 			// if sLEq(shuo, jd0) >= 0 && sq(shuo, jd1) == -1 { // shuo>=jd0 && shuo<jd1
-			if sInDZs(shuo, dz0, dz1) {
-				// if shuop >= math.Floor(beijingTime(jd0)+0.5) && shuop < math.Floor(beijingTime(jd1)+0.5) {
-				ly.shuoCnt[i]++
-			}
+			// if sInDZs(shuo, dz0, dz1) {
+			// 	// if shuop >= math.Floor(beijingTime(jd0)+0.5) && shuop < math.Floor(beijingTime(jd1)+0.5) {
+			// 	ly.shuoCnt[i]++
+			// }
 			ly.Shuoes[i] = append(ly.Shuoes[i], shuo)
 			// fmt.Println(ly.Shuoes[i][0])
 		}
-		if ly.shuoCnt[i] >= 13 { //冬至之间是否有13个朔日
-			// if sInDZs(ly.Shuoes[i][13], dz0, dz1) {
+		// if ly.shuoCnt[i] >= 13 { //冬至之间是否有13个朔日
+		if sInDZs(ly.Shuoes[i][13], dz0, dz1) {
 			ly.leap[i] = true
 		}
 	}
@@ -352,7 +352,7 @@ func (ly LunarYear) Stat() {
 		fmt.Println("==============")
 	}
 	fmt.Println("两个自然年是否有闰：", ly.leap)
-	fmt.Println("两个自然年中冬至之间包含的朔日个数：", ly.shuoCnt[0], ly.shuoCnt[1])
+	// fmt.Println("两个自然年中冬至之间包含的朔日个数：", ly.shuoCnt[0], ly.shuoCnt[1])
 	for i, dz := range ly.dzs {
 		fmt.Println("冬至：", i, math.Floor(beijingTime(dz)+0.5))
 		// fmt.Println(julian.JDToCalendar(dz))
