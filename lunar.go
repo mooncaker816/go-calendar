@@ -119,23 +119,27 @@ func calcTermI(jde float64, i int) float64 {
 // 计算合朔日
 func (ly *LunarYear) moonShuoes() {
 	for i := 0; i < 2; i++ {
-		jd0, jd1 := ly.dzs[i], ly.dzs[i+1]
+		dz0, dz1 := ly.dzs[i], ly.dzs[i+1]
+		jd0 := dz0
 		nm0 := newmoonI(jd0, 0, 0)
+		nm0 = shuoC(nm0, shuoCorrect)
+
 		ly.shuoCnt[i] = 0
 		if !sLEq(nm0, jd0) { // nm0>jd0
 			// if math.Floor(nm0+0.5) > math.Floor(beijingTime(jd0)+0.5) {
 			jd0 -= 29.5306
-			ly.shuoCnt[i]--
+			// ly.shuoCnt[i]--
 		}
 		prevnm := 0.0
 		for j := 0; j < 15; j++ {
 			shuo := newmoonI(jd0, prevnm, j)
+			shuo = shuoC(shuo, shuoCorrect)
 			prevnm = shuo
 			// fmt.Println(DT2SolarTime(shuo))
 			// shuop := math.Floor(shuo + 0.5)
 			// if shuo >= jd0 && shuo < jd1 {
 			// if sLEq(shuo, jd0) >= 0 && sq(shuo, jd1) == -1 { // shuo>=jd0 && shuo<jd1
-			if sInDZs(shuo, jd0, jd1) {
+			if sInDZs(shuo, dz0, dz1) {
 				// if shuop >= math.Floor(beijingTime(jd0)+0.5) && shuop < math.Floor(beijingTime(jd1)+0.5) {
 				ly.shuoCnt[i]++
 			}
@@ -175,7 +179,7 @@ func (ly *LunarYear) genLunarMonth() {
 	monthnum := []int{12, 12}
 	var leapI [2]int
 	leapI[0], leapI[1] = -1, -1
-	fmt.Println(ly.leap[0], ly.leap[1])
+	// fmt.Println(ly.leap[0], ly.leap[1])
 	for i := 0; i < 2; i++ {
 		if ly.leap[i] {
 			leapI[i] = getLeapI(ly.Shuoes[i], ly.Terms[i])
@@ -199,7 +203,7 @@ func (ly *LunarYear) genLunarMonth() {
 		for j := 0; j < monthnum[i]; j++ {
 			var lm LunarMonth
 			lm.d0 = math.Floor(beijingTime(ly.Shuoes[i][j]) + 0.5) //儒略日数
-			lm.dn = int(ly.Shuoes[i][j+1] - lm.d0)
+			lm.dn = int(math.Floor(beijingTime(ly.Shuoes[i][j+1])+0.5) - lm.d0)
 			lm.year = ly.Year + i
 			if ly.leap[i] {
 				switch {
@@ -385,6 +389,7 @@ func beijingTime(jd float64) float64 {
 // 若朔>气，则认为该气不属于该朔
 func sLEq(s, q float64) bool {
 	s = math.Floor(beijingTime(s) + 0.5)
+	// s = shuoC(s, shuoCorrect)
 	q = math.Floor(beijingTime(q) + 0.5)
 	switch {
 	case s <= q:
@@ -397,11 +402,30 @@ func sLEq(s, q float64) bool {
 // 判断朔是否在两冬至之间
 func sInDZs(s, dz0, dz1 float64) bool {
 	s = math.Floor(beijingTime(s) + 0.5)
+	// s = shuoC(s, shuoCorrect)
 	dz0 = math.Floor(beijingTime(dz0) + 0.5)
 	dz1 = math.Floor(beijingTime(dz1) + 0.5)
 	// 注意，此处如果朔和冬至重合，则将该朔记入该冬至之前的那个自然年中，否则会出现偏差（如1984）
 	if s > dz0 && s <= dz1 {
+		// fmt.Println(s, dz0, dz1)
 		return true
 	}
 	return false
+}
+
+func shuoC(shuo float64, a []struct{ jd, delta float64 }) float64 {
+	key := math.Floor(beijingTime(shuo) + 0.5)
+	lo := 0
+	hi := len(a) - 1
+	for lo <= hi {
+		mid := lo + (hi-lo)/2
+		if key < a[mid].jd {
+			hi = mid - 1
+		} else if key > a[mid].jd {
+			lo = mid + 1
+		} else {
+			return shuo + a[mid].delta
+		}
+	}
+	return shuo
 }

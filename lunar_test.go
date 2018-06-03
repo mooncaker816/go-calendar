@@ -5,7 +5,7 @@ import (
 )
 
 func ExampleGenLunarYear() {
-	ly := GenLunarYear(1984)
+	ly := GenLunarYear(1789)
 	for _, term := range ly.Terms[0] {
 		fmt.Println(DT2SolarTime(term))
 	}
@@ -182,7 +182,7 @@ var leaps = []struct {
 // }
 
 func ExampleGenLunar() {
-	ly := GenLunarYear(1984)
+	ly := GenLunarYear(1789)
 	ly.Stat()
 	// Output:
 	//
