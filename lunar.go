@@ -5,7 +5,6 @@ import (
 	"log"
 	"math"
 
-	"github.com/mooncaker816/learnmeeus/v3/base"
 	"github.com/mooncaker816/learnmeeus/v3/julian"
 	"github.com/mooncaker816/learnmeeus/v3/moonphase"
 
@@ -64,9 +63,7 @@ type LunarYear struct {
 // NatureYear 两个农历自然年
 type NatureYear struct {
 	Terms   [2][]float64  // 两个自然年包含的节气
-	mTerms  [2][]float64  // 两个自然年包含的节气的J1900起算儒略日数
 	Shuoes  [2][]float64  // 两个自然年包含的朔日
-	mShuoes [2][]float64  // 两个自然年包含的朔日的J1900起算儒略日数
 	shuoCnt [2]int        // 两个自然年包含的朔日的个数
 	dzs     [3]float64    // 划分两个自然年的三个冬至
 	leap    [2]bool       // 两个自然年中是否有闰月
@@ -100,7 +97,6 @@ func (ly *LunarYear) solarTerms() {
 		for j := 0; j < 25; j++ {
 			t := calcTermI(j0, j)
 			ly.Terms[i] = append(ly.Terms[i], t)
-			ly.mTerms[i] = append(ly.mTerms[i], math.Floor(t+0.5)-base.J1900)
 		}
 	}
 }
@@ -117,30 +113,34 @@ func calcTermI(jde float64, i int) float64 {
 			break
 		}
 	}
-	return beijingTime(jde)
+	return jde
 }
 
 // 计算合朔日
 func (ly *LunarYear) moonShuoes() {
 	for i := 0; i < 2; i++ {
 		jd0, jd1 := ly.dzs[i], ly.dzs[i+1]
-		nm0 := newmoonI(jd0, 0)
+		nm0 := newmoonI(jd0, 0, 0)
 		ly.shuoCnt[i] = 0
-		// fmt.Println(nm0, jd0)
-		if math.Floor(nm0+0.5) > math.Floor(jd0+0.5) {
+		if !sLEq(nm0, jd0) { // nm0>jd0
+			// if math.Floor(nm0+0.5) > math.Floor(beijingTime(jd0)+0.5) {
 			jd0 -= 29.5306
 			ly.shuoCnt[i]--
 		}
+		prevnm := 0.0
 		for j := 0; j < 15; j++ {
-			shuo := newmoonI(jd0, j)
-			// fmt.Println(shuo)
-			shuop := math.Floor(shuo + 0.5)
+			shuo := newmoonI(jd0, prevnm, j)
+			prevnm = shuo
+			// fmt.Println(DT2SolarTime(shuo))
+			// shuop := math.Floor(shuo + 0.5)
 			// if shuo >= jd0 && shuo < jd1 {
-			if shuop >= math.Floor(jd0+0.5) && shuop < math.Floor(jd1+0.5) {
+			// if sLEq(shuo, jd0) >= 0 && sq(shuo, jd1) == -1 { // shuo>=jd0 && shuo<jd1
+			if sInDZs(shuo, jd0, jd1) {
+				// if shuop >= math.Floor(beijingTime(jd0)+0.5) && shuop < math.Floor(beijingTime(jd1)+0.5) {
 				ly.shuoCnt[i]++
 			}
 			ly.Shuoes[i] = append(ly.Shuoes[i], shuo)
-			ly.mShuoes[i] = append(ly.mShuoes[i], shuop-base.J1900)
+			// fmt.Println(ly.Shuoes[i][0])
 		}
 		if ly.shuoCnt[i] >= 13 { //冬至之间是否有13个朔日
 			ly.leap[i] = true
@@ -158,10 +158,15 @@ func jd2year(jd float64) float64 {
 	return float64(year) + float64(julian.DayOfYearGregorian(year, m, int(d)))/yeardays
 }
 
-func newmoonI(jd float64, i int) float64 {
+func newmoonI(jd, prevnm float64, i int) float64 {
 	nmjd := jd + 29.5306*float64(i)
 	y := jd2year(nmjd)
-	return beijingTime(moonphase.New(y))
+	s := moonphase.New(y)
+	if s == prevnm { //可能前后两次计算出的最近新月是相同的，这时就要再加一天进行计算
+		s = moonphase.New(jd2year(nmjd + 1))
+	}
+	// fmt.Println(jd, i, "->", s)
+	return s
 }
 
 // 建月，两个自然年之间的所有月份，包含一整个农历年月份
@@ -170,32 +175,31 @@ func (ly *LunarYear) genLunarMonth() {
 	monthnum := []int{12, 12}
 	var leapI [2]int
 	leapI[0], leapI[1] = -1, -1
-	if ly.leap[0] || ly.leap[1] {
-		leapI = checkLeap(ly.mShuoes, ly.mTerms) //检查两个农历自然年的闰月情况
-		if ly.leap[0] {
-			monthnum[0]++
-		}
-		if ly.leap[1] {
-			monthnum[1]++
-		}
-		if leapI[0] >= 3 && leapI[0] <= 12 { // 闰农历年的1-10月
-			ly.LeapN = i2monthseq(leapI[0] - 1)
-		}
-		if leapI[1] <= 2 && leapI[1] > 0 { //闰农历年的11，12月
-			ly.LeapN = i2monthseq(leapI[1] - 1)
+	fmt.Println(ly.leap[0], ly.leap[1])
+	for i := 0; i < 2; i++ {
+		if ly.leap[i] {
+			leapI[i] = getLeapI(ly.Shuoes[i], ly.Terms[i])
+			monthnum[i]++
 		}
 	}
+	if leapI[0] >= 3 && leapI[0] <= 12 { // 闰农历年的1-10月
+		ly.LeapN = i2monthseq(leapI[0] - 1)
+	}
+	if leapI[1] <= 2 && leapI[1] > 0 { //闰农历年的11，12月
+		ly.LeapN = i2monthseq(leapI[1] - 1)
+	}
+
 	// 定农历年首（春节）
 	var offset int
-	ly.SpringFest, offset = getSpringFest(ly.mShuoes[0], leapI[0])
+	ly.SpringFest, offset = getSpringFest(ly.Shuoes[0], leapI[0])
 
 	// fmt.Println(ly.leap[0], ly.leap[1])
 	// fmt.Println(leapI[0], leapI[1])
 	for i := 0; i < 2; i++ {
 		for j := 0; j < monthnum[i]; j++ {
 			var lm LunarMonth
-			lm.d0 = ly.mShuoes[i][j] + base.J1900 //儒略日数
-			lm.dn = int(ly.mShuoes[i][j+1] + base.J1900 - lm.d0)
+			lm.d0 = math.Floor(beijingTime(ly.Shuoes[i][j]) + 0.5) //儒略日数
+			lm.dn = int(ly.Shuoes[i][j+1] - lm.d0)
 			lm.year = ly.Year + i
 			if ly.leap[i] {
 				switch {
@@ -236,14 +240,16 @@ func (ly *LunarYear) genLunarMonth() {
 	// ms = append(ms, m)
 	return
 }
-func checkLeap(shuoes, terms [2][]float64) [2]int {
-	var leapI [2]int
-	for i := 0; i < 2; i++ {
-		leapI[i] = -1
-		leapI[i] = getLeapI(shuoes[i], terms[i])
-	}
-	return leapI
-}
+
+// func checkLeap(shuoes, terms [2][]float64) [2]int {
+// 	var leapI [2]int
+// 	for i := 0; i < 2; i++ {
+// 		leapI[i] = -1
+// 		leapI[i] = getLeapI(shuoes[i], terms[i])
+// 		fmt.Println(leapI[i])
+// 	}
+// 	return leapI
+// }
 
 // 中气与合朔日发生在同一天，是用“发生时刻的先后顺序确定某月是否包中气”还是用“日期来确定包含关系”。
 // 从原理上说，这两种方法都是可行的，不过，传统上为了降低历算的精度要求，采用后者来判断一个月中是否包含中气，紫金历也是如此。
@@ -253,14 +259,14 @@ func getLeapI(shuoes, terms []float64) int {
 	for i := 0; i < 13; i++ {
 		s0 := shuoes[i]
 		s1 := shuoes[i+1]
-		for t < s0 {
+		for !sLEq(s0, t) { // s0>t
 			j += 2
 			if j >= len(terms) {
 				return i
 			}
 			t = terms[j]
 		}
-		if s0 <= t && t < s1 {
+		if sLEq(s0, t) && !sLEq(s1, t) { // s0 <= t && s1 > t
 			continue
 		}
 		return i // [1,12]
@@ -269,12 +275,12 @@ func getLeapI(shuoes, terms []float64) int {
 }
 
 func getSpringFest(shuoes []float64, leapI int) (float64, int) {
-	springFest := shuoes[2] //春节儒略日数
+	springFest := shuoes[2]
 	offset := 2
 	if leapI != -1 && leapI <= 2 { //闰11或闰12月
-		springFest = shuoes[3] //春节儒略日数
+		springFest = shuoes[3]
 	}
-	return springFest + base.J1900, offset
+	return math.Floor(beijingTime(springFest) + 0.5), offset
 }
 
 func i2monthseq(i int) int {
@@ -343,18 +349,18 @@ func (ly LunarYear) Stat() {
 	fmt.Println("两个自然年是否有闰：", ly.leap)
 	fmt.Println("两个自然年中冬至之间包含的朔日个数：", ly.shuoCnt[0], ly.shuoCnt[1])
 	for i, dz := range ly.dzs {
-		fmt.Println("冬至：", i, math.Floor(dz)-base.J1900)
+		fmt.Println("冬至：", i, math.Floor(beijingTime(dz)+0.5))
 		// fmt.Println(julian.JDToCalendar(dz))
 	}
-	for _, shuo := range ly.mShuoes {
+	for _, shuo := range ly.Shuoes {
 		for i, v := range shuo {
-			fmt.Println("朔：", i, v)
+			fmt.Println("朔：", i, math.Floor(beijingTime(v)+0.5))
 			// fmt.Println(julian.JDToCalendar(v))
 		}
 	}
-	for _, term := range ly.mTerms {
+	for _, term := range ly.Terms {
 		for i := 0; i < len(term); i = i + 2 {
-			fmt.Println("气：", i/2, term[i])
+			fmt.Println("气：", i/2, math.Floor(beijingTime(term[i])+0.5))
 			// fmt.Println(julian.JDToCalendar(v))
 		}
 	}
@@ -371,4 +377,31 @@ func (ly LunarYear) Stat() {
 
 func beijingTime(jd float64) float64 {
 	return jd + deltat(jd) + float64(8)/24
+}
+
+// 判断气相对于朔的关系，用于判断具体闰哪一个月
+// 若朔=气，则认为该气属于该朔
+// 若朔<气，则认为该气可能属于该朔，还要检查该气是否小于下一个朔
+// 若朔>气，则认为该气不属于该朔
+func sLEq(s, q float64) bool {
+	s = math.Floor(beijingTime(s) + 0.5)
+	q = math.Floor(beijingTime(q) + 0.5)
+	switch {
+	case s <= q:
+		return true
+	default:
+		return false
+	}
+}
+
+// 判断朔是否在两冬至之间
+func sInDZs(s, dz0, dz1 float64) bool {
+	s = math.Floor(beijingTime(s) + 0.5)
+	dz0 = math.Floor(beijingTime(dz0) + 0.5)
+	dz1 = math.Floor(beijingTime(dz1) + 0.5)
+	// 注意，此处如果朔和冬至重合，则将该朔记入该冬至之前的那个自然年中，否则会出现偏差（如1984）
+	if s > dz0 && s <= dz1 {
+		return true
+	}
+	return false
 }

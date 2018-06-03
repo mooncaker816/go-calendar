@@ -2,19 +2,24 @@ package calendar
 
 import (
 	"fmt"
-	"testing"
 )
 
 func ExampleGenLunarYear() {
-	ly := GenLunarYear(2018)
+	ly := GenLunarYear(1984)
 	for _, term := range ly.Terms[0] {
-		fmt.Println(DT2SolarTime(term, 0))
+		fmt.Println(DT2SolarTime(term))
+	}
+	for _, term := range ly.Terms[1] {
+		fmt.Println(DT2SolarTime(term))
 	}
 	fmt.Println()
 	for _, shuo := range ly.Shuoes[0] {
-		fmt.Println(DT2SolarTime(shuo, 0))
+		fmt.Println(DT2SolarTime(shuo))
 	}
-	// Outputxxx:
+	for _, shuo := range ly.Shuoes[1] {
+		fmt.Println(DT2SolarTime(shuo))
+	}
+	// Output:
 	// x
 }
 
@@ -133,52 +138,52 @@ var leaps = []struct {
 	{2786, "三月"}, {2788, "七月"}, {2791, "六月"}, {2794, "三月"}, {2796, "八月"},
 }
 
-func TestLunarLeap(t *testing.T) {
-	count := 0
-	addcount := 0
-	misscount := 0
-	wrongcount := 0
-	goodcount := 0
-	j := 0
-	for i := 1645; i <= 2796; i++ {
-		ly := GenLunarYear(i)
-		if ly.LeapN > -1 {
-			count++
-			leapMonth := (*ly.Months)[ly.LeapN]
-			switch {
-			case leapMonth.year < leaps[j].year: // 多算了闰年
-				addcount++
-				t.Errorf("additional leap year: %d %s", leapMonth.year, monthName[leapMonth.seq])
-			case leapMonth.year > leaps[j].year: // 少算了闰年
-				for leapMonth.year > leaps[j].year {
-					misscount++
-					t.Errorf("miss leap year: %d %s", leaps[j].year, leaps[j].m)
-					j++
-				}
-			default:
-				if monthName[leapMonth.seq] != leaps[j].m {
-					wrongcount++
-					t.Errorf("wrong leap month : %d %s, expect: %d %s", leapMonth.year, monthName[leapMonth.seq], leaps[j].year, leaps[j].m)
-				} else {
-					goodcount++
-					// t.Logf("good leap: %d %s", leapMonth.year, monthName[leapMonth.seq])
-				}
-				j++
-			}
-		}
-	}
-	t.Logf("======================================\n")
-	t.Logf("total cal leaps: %d\n", count)
-	t.Logf("total base leaps: %d\n", len(leaps))
-	t.Logf("miss leaps: %d\n", misscount)
-	t.Logf("additional leaps: %d\n", addcount)
-	t.Logf("wrong leaps: %d\n", wrongcount)
-	t.Logf("good leaps: %d\n", goodcount)
-}
-
-// func ExampleGenLunar() {
-// 	ly := GenLunarYear(1984)
-// 	ly.Stat()
-// 	// Output:
-// 	//
+// func TestLunarLeap(t *testing.T) {
+// 	count := 0
+// 	addcount := 0
+// 	misscount := 0
+// 	wrongcount := 0
+// 	goodcount := 0
+// 	j := 0
+// 	for i := 1645; i <= 2796; i++ {
+// 		ly := GenLunarYear(i)
+// 		if ly.LeapN > -1 {
+// 			count++
+// 			leapMonth := (*ly.Months)[ly.LeapN]
+// 			switch {
+// 			case leapMonth.year < leaps[j].year: // 多算了闰年
+// 				addcount++
+// 				t.Errorf("additional leap year: %d %s", leapMonth.year, monthName[leapMonth.seq])
+// 			case leapMonth.year > leaps[j].year: // 少算了闰年
+// 				for leapMonth.year > leaps[j].year {
+// 					misscount++
+// 					t.Errorf("miss leap year: %d %s", leaps[j].year, leaps[j].m)
+// 					j++
+// 				}
+// 			default:
+// 				if monthName[leapMonth.seq] != leaps[j].m {
+// 					wrongcount++
+// 					t.Errorf("wrong leap month : %d %s, expect: %d %s", leapMonth.year, monthName[leapMonth.seq], leaps[j].year, leaps[j].m)
+// 				} else {
+// 					goodcount++
+// 					// t.Logf("good leap: %d %s", leapMonth.year, monthName[leapMonth.seq])
+// 				}
+// 				j++
+// 			}
+// 		}
+// 	}
+// 	t.Logf("======================================\n")
+// 	t.Logf("total cal leaps: %d\n", count)
+// 	t.Logf("total base leaps: %d\n", len(leaps))
+// 	t.Logf("miss leaps: %d\n", misscount)
+// 	t.Logf("additional leaps: %d\n", addcount)
+// 	t.Logf("wrong leaps: %d\n", wrongcount)
+// 	t.Logf("good leaps: %d\n", goodcount)
 // }
+
+func ExampleGenLunar() {
+	ly := GenLunarYear(1984)
+	ly.Stat()
+	// Output:
+	//
+}
