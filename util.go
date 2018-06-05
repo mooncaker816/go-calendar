@@ -51,3 +51,21 @@ func deltat(jde float64) float64 {
 		return unit.Time(float64(31*(year-1820)*(year-1820))/10000 - float64(20)).Day()
 	}
 }
+
+func mod(x, y int) int {
+	m := x % y
+	if m < 0 {
+		m += y
+	}
+	return m
+}
+
+// 将 jd 转换成同一天12点的儒略日
+func jd2jdN(jd float64) float64 {
+	return math.Floor(jd + 0.5)
+}
+
+// 将 jd 转换成同一天0点的儒略日
+func jd2jd00(jd float64) float64 {
+	return jd2jdN(jd) - 0.5
+}

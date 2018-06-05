@@ -1,6 +1,6 @@
 package calendar
 
-var shuoCorrect = []struct{ jd, delta float64 }{
+var shuoCorrect = []struct{ jdN, delta float64 }{
 	{2269455, -1},
 	{2271846, 1},
 	{2273973, -1},
