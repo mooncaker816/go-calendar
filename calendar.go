@@ -197,27 +197,24 @@ func (d Day) String() string {
 	return b.String()
 }
 
-// Num   int     //公历月份
-// D0    float64 //月首儒略日数
-// Dn    int     //本月的天数
-// Week0 int     //月首的星期
-// WeekN int     //本月的总周数
 func (m Month) String() string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("%d月\n", m.Num))
-	b.WriteString("日  一  二  三  四  五  六\n")
+	b.WriteString(fmt.Sprintf("📅%13s%d月\n", " ", m.Num))
+	b.WriteString("   日  一  二  三  四  五  六\n")
 
 	k := 1
+	idx := 0
 	cnt := 7 - m.Week0
 Loop:
 	for i := 0; i < m.WeekN; i++ {
+		if i > 0 {
+			cnt = 7
+		}
+		b.WriteString("☀️  ")
 		if i == 0 {
 			for j := 0; j < m.Week0; j++ {
 				b.WriteString(fmt.Sprintf("%4s", " "))
 			}
-		}
-		if i > 0 {
-			cnt = 7
 		}
 		for j := 0; j < cnt; j++ {
 			width := 2
@@ -227,8 +224,8 @@ Loop:
 			b.WriteString(fmt.Sprintf("%-*d", width, k)) //左对齐
 			k++
 			if k > m.Dn {
-				b.WriteString("\n")
-				break Loop
+				// b.WriteString("\n")
+				break
 			}
 			if j == cnt-1 {
 				continue
@@ -236,14 +233,59 @@ Loop:
 			b.WriteString(fmt.Sprintf("%2s", " "))
 		}
 		b.WriteString("\n")
+		b.WriteString("🌛  ")
+		if i == 0 {
+			for j := 0; j < m.Week0; j++ {
+				b.WriteString(fmt.Sprintf("%4s", " "))
+			}
+		}
+		for j := 0; j < cnt; j++ {
+			d := m.Days[idx]
+			switch {
+			case d.LDN == 1:
+				b.WriteString(yueNames[d.LMN-1])
+				if d.LMleap {
+					b.WriteString("®")
+				}
+			case d.LDN > 1 && d.LDN < 10 && (j == cnt-1 || idx == m.Dn-1):
+				b.WriteString(fmt.Sprintf("%-d", d.LDN)) //左对齐
+			default:
+				b.WriteString(fmt.Sprintf("%-2d", d.LDN)) //左对齐
+			}
+			idx++
+			if idx > m.Dn-1 {
+				// b.WriteString("\n")
+				break Loop
+			}
+			if j == cnt-1 {
+				continue
+			}
+			if d.LDN == 1 && d.LMleap {
+				b.WriteString(fmt.Sprintf("%s", " "))
+			} else {
+				b.WriteString("  ")
+			}
+		}
+		b.WriteString("\n")
 	}
 
 	return b.String()
 }
 
-// func (y Year) String() string {
+func (y Year) String() string {
+	var b strings.Builder
+	leap := ""
+	if y.Leap {
+		leap = "（闰）"
+	}
+	b.WriteString(fmt.Sprintf("%13s%d年%s\n", " ", y.Num, leap))
+	for i := 0; i < 12; i++ {
+		b.WriteString(y.Months[i].String())
+		b.WriteString("\n")
+	}
+	return b.String()
+}
 
-// }
 func time2sci(t time.Time) int {
 	return ((t.Hour() + 1) / 2) % 12
 }
@@ -323,8 +365,8 @@ func YearCalendar(y int, AD bool) (Year, error) {
 	year.Leap = julian.LeapYearGregorian(y)
 	year.Months = make([]Month, 12)
 	ly := GenLunarYear(yN)
-	for i := 1; i <= 12; i++ {
-		m, err := MonthCalendar(y, i, AD, ly)
+	for i := 0; i < 12; i++ {
+		m, err := MonthCalendar(y, i+1, AD, ly)
 		if err != nil {
 			return year, err
 		}
