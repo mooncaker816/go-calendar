@@ -345,8 +345,18 @@ func shuoC(shuo float64, a []struct{ jdN, delta float64 }) float64 {
 	return shuo
 }
 
-// Stat 列出基本信息
-func (ly LunarYear) Stat() {
+func checkLY(ly *LunarYear, year int, jdN float64) *LunarYear {
+	if ly == nil || jdN < jd2jdN(ly.dzs[0]) {
+		ly = GenLunarYear(year)
+	}
+	if jdN >= jd2jdN(ly.dzs[2]) {
+		ly = GenLunarYear(year + 1)
+	}
+	return ly
+}
+
+// debug testing only
+func (ly LunarYear) debug() {
 	fmt.Println("年：", ly.Year)
 	fmt.Println("闰月：", ly.LeapN+1)
 	fmt.Println("春节：")
@@ -390,14 +400,4 @@ func (ly LunarYear) Stat() {
 		fmt.Println("年：", m.year)
 		fmt.Println("==============")
 	}
-}
-
-func checkLY(ly *LunarYear, year int, jdN float64) *LunarYear {
-	if ly == nil || jdN < jd2jdN(ly.dzs[0]) {
-		ly = GenLunarYear(year)
-	}
-	if jdN >= jd2jdN(ly.dzs[2]) {
-		ly = GenLunarYear(year + 1)
-	}
-	return ly
 }

@@ -1,51 +1,53 @@
 package calendar
 
 import (
-	"fmt"
+	"sort"
+	"sync"
+	"testing"
 )
 
-func ExampleGenLunarYear() {
-	ly := GenLunarYear(2100)
-	for _, term := range ly.Terms[0] {
-		fmt.Println(DT2SolarTime(term))
-	}
-	for _, term := range ly.Terms[1] {
-		fmt.Println(DT2SolarTime(term))
-	}
-	fmt.Println()
-	for _, shuo := range ly.Shuoes[0] {
-		fmt.Println(DT2SolarTime(shuo))
-	}
-	for _, shuo := range ly.Shuoes[1] {
-		fmt.Println(DT2SolarTime(shuo))
-	}
-	// Output:
-	// x
-}
+// func ExampleGenLunarYear() {
+// 	ly := GenLunarYear(2100)
+// 	for _, term := range ly.Terms[0] {
+// 		fmt.Println(DT2SolarTime(term))
+// 	}
+// 	for _, term := range ly.Terms[1] {
+// 		fmt.Println(DT2SolarTime(term))
+// 	}
+// 	fmt.Println()
+// 	for _, shuo := range ly.Shuoes[0] {
+// 		fmt.Println(DT2SolarTime(shuo))
+// 	}
+// 	for _, shuo := range ly.Shuoes[1] {
+// 		fmt.Println(DT2SolarTime(shuo))
+// 	}
+// 	// Output:
+// 	// x
+// }
 
-func ExampleGregorianToLunarDate() {
-	fmt.Println(DayCalendar(2018, 6, 2, true, nil))
-	fmt.Println(DayCalendar(2017, 7, 25, true, nil))
-	fmt.Println(DayCalendar(2017, 12, 21, true, nil))
-	fmt.Println(DayCalendar(2017, 12, 22, true, nil))
-	fmt.Println(DayCalendar(2017, 12, 23, true, nil))
-	fmt.Println(DayCalendar(2017, 12, 31, true, nil))
-	fmt.Println(DayCalendar(2018, 1, 1, true, nil))
-	fmt.Println(DayCalendar(2018, 1, 31, true, nil))
-	fmt.Println(DayCalendar(2018, 2, 15, true, nil))
-	fmt.Println(DayCalendar(2018, 2, 16, true, nil))
-	// Output:
-	// 2018年四月十九
-	// 2017年闰六月初三
-	// 2017年冬月初四
-	// 2017年冬月初五
-	// 2017年冬月初六
-	// 2017年冬月十四
-	// 2017年冬月十五
-	// 2017年腊月十五
-	// 2017年腊月三十
-	// 2018年正月初一
-}
+// func ExampleGregorianToLunarDate() {
+// 	fmt.Println(DayCalendar(2018, 6, 2, true, nil))
+// 	fmt.Println(DayCalendar(2017, 7, 25, true, nil))
+// 	fmt.Println(DayCalendar(2017, 12, 21, true, nil))
+// 	fmt.Println(DayCalendar(2017, 12, 22, true, nil))
+// 	fmt.Println(DayCalendar(2017, 12, 23, true, nil))
+// 	fmt.Println(DayCalendar(2017, 12, 31, true, nil))
+// 	fmt.Println(DayCalendar(2018, 1, 1, true, nil))
+// 	fmt.Println(DayCalendar(2018, 1, 31, true, nil))
+// 	fmt.Println(DayCalendar(2018, 2, 15, true, nil))
+// 	fmt.Println(DayCalendar(2018, 2, 16, true, nil))
+// 	// Output:
+// 	// 2018年四月十九
+// 	// 2017年闰六月初三
+// 	// 2017年冬月初四
+// 	// 2017年冬月初五
+// 	// 2017年冬月初六
+// 	// 2017年冬月十四
+// 	// 2017年冬月十五
+// 	// 2017年腊月十五
+// 	// 2017年腊月三十
+// 	// 2018年正月初一
+// }
 
 var leaps = []struct {
 	year int
@@ -62,7 +64,7 @@ var leaps = []struct {
 	{1754, "四月"}, {1756, "九月"}, {1759, "六月"}, {1762, "五月"}, {1765, "二月"},
 	{1767, "七月"}, {1770, "五月"}, {1773, "三月"}, {1775, "十月"}, {1778, "六月"},
 	{1781, "五月"}, {1784, "三月"}, {1786, "七月"}, {1789, "五月"}, {1792, "四月"},
-	{1795, "二月"}, {1797, "六月"}, {1800, "四月"}, {1803, "二月"}, {1805, "七月"},
+	{1795, "二月"}, {1797, "六月"}, {1800, "四月"}, {1803, "二月"}, {1805, "六月"}, //{1805, "七月"}原文有误，应该闰六月
 	{1808, "五月"}, {1811, "三月"}, {1814, "二月"}, {1816, "六月"}, {1819, "四月"},
 	{1822, "三月"}, {1824, "七月"}, {1827, "五月"}, {1830, "四月"}, {1832, "九月"},
 	{1835, "六月"}, {1838, "四月"}, {1841, "三月"}, {1843, "七月"}, {1846, "五月"},
@@ -138,52 +140,108 @@ var leaps = []struct {
 	{2786, "三月"}, {2788, "七月"}, {2791, "六月"}, {2794, "三月"}, {2796, "八月"},
 }
 
-// func TestLunarLeap(t *testing.T) {
-// 	count := 0
-// 	addcount := 0
-// 	misscount := 0
-// 	wrongcount := 0
-// 	goodcount := 0
-// 	j := 0
-// 	for i := 1645; i <= 2796; i++ {
-// 		ly := GenLunarYear(i)
-// 		if ly.LeapN > -1 {
-// 			count++
-// 			leapMonth := (*ly.Months)[ly.LeapN]
-// 			switch {
-// 			case leapMonth.year < leaps[j].year: // 多算了闰年
-// 				addcount++
-// 				t.Errorf("additional leap year: %d %s", leapMonth.year, monthName[leapMonth.seq])
-// 			case leapMonth.year > leaps[j].year: // 少算了闰年
-// 				for leapMonth.year > leaps[j].year {
-// 					misscount++
-// 					t.Errorf("miss leap year: %d %s", leaps[j].year, leaps[j].m)
-// 					j++
-// 				}
-// 			default:
-// 				if monthName[leapMonth.seq] != leaps[j].m {
-// 					wrongcount++
-// 					t.Errorf("wrong leap month : %d %s, expect: %d %s", leapMonth.year, monthName[leapMonth.seq], leaps[j].year, leaps[j].m)
-// 				} else {
-// 					goodcount++
-// 					// t.Logf("good leap: %d %s", leapMonth.year, monthName[leapMonth.seq])
-// 				}
-// 				j++
-// 			}
-// 		}
-// 	}
-// 	t.Logf("======================================\n")
-// 	t.Logf("total cal leaps: %d\n", count)
-// 	t.Logf("total base leaps: %d\n", len(leaps))
-// 	t.Logf("miss leaps: %d\n", misscount)
-// 	t.Logf("additional leaps: %d\n", addcount)
-// 	t.Logf("wrong leaps: %d\n", wrongcount)
-// 	t.Logf("good leaps: %d\n", goodcount)
-// }
+// TestLunarLeap checks all the leap year from 1645 to 2796
+func Test1000yearsLunarLeap(t *testing.T) {
+	count := 0
+	addcount := 0
+	misscount := 0
+	wrongcount := 0
+	goodcount := 0
+	addChan := make(chan int)
+	wrongChan := make(chan int)
+	goodChan := make(chan int)
+	totalChan := make(chan int)
+	query := make(chan int)
+	workerexit := make(chan struct{})
+	counterexit := make(chan struct{})
+	seen := make(map[int]int)
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			for {
+				select {
+				case <-workerexit:
+					wg.Done()
+					return
+				case y := <-query:
+					ly := GenLunarYear(y)
+					if ly.LeapN > -1 {
+						totalChan <- 1
+						leapMonth := ly.Months[ly.LeapN]
+						f := func(i int) bool {
+							// fmt.Println("inside:", i, leaps[i].year, leapMonth.year)
+							return leaps[i].year >= leapMonth.year
+						}
+						// fmt.Println(len(leaps))
+						idx := sort.Search(len(leaps), f)
+						// fmt.Println(idx)
+						if idx < len(leaps) && leaps[idx].year == leapMonth.year {
+							if leaps[idx].m == monthName[leapMonth.seq] {
+								goodChan <- leapMonth.year
+							} else {
+								t.Errorf("wrong leap month : %d %s, expect: %d %s", leapMonth.year, monthName[leapMonth.seq], leaps[idx].year, leaps[idx].m)
+								wrongChan <- leapMonth.year
+							}
+						} else {
+							t.Errorf("additional leap year: %d %s", leapMonth.year, monthName[leapMonth.seq])
+							addChan <- leapMonth.year
+						}
+					}
+				}
+			}
+		}()
+	}
+	var wg1 sync.WaitGroup
+	wg1.Add(1)
+	go func() {
+		for {
+			select {
+			case y := <-addChan:
+				addcount++
+				seen[y]++
+			case y := <-wrongChan:
+				wrongcount++
+				seen[y]++
+			case y := <-goodChan:
+				goodcount++
+				seen[y]++
+			case <-totalChan:
+				count++
+			case <-counterexit:
+				wg1.Done()
+				return
+			}
+		}
+	}()
 
-func ExampleGenLunar() {
-	ly := GenLunarYear(2100)
-	ly.Stat()
-	// Output:
-	//
+	for i := 1645; i <= 2796; i++ {
+		query <- i
+	}
+	close(workerexit)
+	wg.Wait()
+	close(counterexit)
+	wg1.Wait()
+	for _, v := range leaps {
+		if _, ok := seen[v.year]; !ok {
+			misscount++
+			t.Errorf("miss leap year: %d %s", v.year, v.m)
+		}
+	}
+
+	if addcount > 0 || misscount > 0 || wrongcount > 0 {
+		t.Logf("======================================\n")
+		t.Logf("total cal leaps: %d\n", count)
+		t.Logf("total base leaps: %d\n", len(leaps))
+		t.Logf("miss leaps: %d\n", misscount)
+		t.Logf("additional leaps: %d\n", addcount)
+		t.Logf("wrong leaps: %d\n", wrongcount)
+		t.Logf("good leaps: %d\n", goodcount)
+	}
 }
+
+// TestGenLunarYear list all the informations while generating the LunarYear struct
+// func TestGenLunarYear(t *testing.T) {
+// 	ly := GenLunarYear(2100)
+// 	ly.debug()
+// }
