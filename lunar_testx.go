@@ -24,16 +24,16 @@ func ExampleGenLunarYear() {
 }
 
 func ExampleGregorianToLunarDate() {
-	fmt.Println(GregorianToLunarDate(2018, 6, 2, nil))
-	fmt.Println(GregorianToLunarDate(2017, 7, 25, nil))
-	fmt.Println(GregorianToLunarDate(2017, 12, 21, nil))
-	fmt.Println(GregorianToLunarDate(2017, 12, 22, nil))
-	fmt.Println(GregorianToLunarDate(2017, 12, 23, nil))
-	fmt.Println(GregorianToLunarDate(2017, 12, 31, nil))
-	fmt.Println(GregorianToLunarDate(2018, 1, 1, nil))
-	fmt.Println(GregorianToLunarDate(2018, 1, 31, nil))
-	fmt.Println(GregorianToLunarDate(2018, 2, 15, nil))
-	fmt.Println(GregorianToLunarDate(2018, 2, 16, nil))
+	fmt.Println(DayCalendar(2018, 6, 2, true, nil))
+	fmt.Println(DayCalendar(2017, 7, 25, true, nil))
+	fmt.Println(DayCalendar(2017, 12, 21, true, nil))
+	fmt.Println(DayCalendar(2017, 12, 22, true, nil))
+	fmt.Println(DayCalendar(2017, 12, 23, true, nil))
+	fmt.Println(DayCalendar(2017, 12, 31, true, nil))
+	fmt.Println(DayCalendar(2018, 1, 1, true, nil))
+	fmt.Println(DayCalendar(2018, 1, 31, true, nil))
+	fmt.Println(DayCalendar(2018, 2, 15, true, nil))
+	fmt.Println(DayCalendar(2018, 2, 16, true, nil))
 	// Output:
 	// 2018年四月十九
 	// 2017年闰六月初三

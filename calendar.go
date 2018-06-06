@@ -2,6 +2,8 @@ package calendar
 
 import (
 	"FunOfSinoGraph/src/ichang"
+	"errors"
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -16,24 +18,24 @@ const (
 	J2000jzr = 2451551 // 2000-1-7 甲子日
 )
 
-type Calendar struct {
-}
-
+// Year contains 1 Gregorian year's calendar info including Lunar info
 type Year struct {
-	Year   int
+	Num    int
 	Months []Month
 	Leap   bool
 }
 
+// Month contains 1 Gregorian month's calendar info including Lunar info
 type Month struct {
+	Num   int     //公历月份
 	D0    float64 //月首儒略日数
 	Dn    int     //本月的天数
 	Week0 int     //月首的星期
 	WeekN int     //本月的总周数
-	Num   int     //公历月份
 	Days  []Day   //该月的日
 }
 
+// Day contains 1 Day's calendar info including Lunar info
 type Day struct {
 	// 公历信息
 	Jd    float64 // 儒略日数,北京时12:00
@@ -42,21 +44,15 @@ type Day struct {
 	YN    int     // 所在公历年
 	Week  int     // 星期
 	Weeki int     // 在本月中的周序号
+	XZ    int     // 星座序号
 	// 农历信息
-	LDN int //所在农历月内日数
-	// ob.cur_dz 距冬至的天数
-	// ob.cur_xz 距夏至的天数
-	// ob.cur_lq 距立秋的天数
-	// ob.cur_mz 距芒种的天数
-	// ob.cur_xs 距小暑的天数
+	LDN    int  //所在农历月内日数
 	LMN    int  //农历月数
 	LMDn   int  //农历月天数
 	LMleap bool //闰月标志
 	LYN    int  //农历年数，以春节为界
 	LYSX   ichang.Shengxiao
 	GZInfo
-	// ob.Ltime2 纪时
-	// ob.XiZ 星座
 }
 
 // GZInfo 干支信息
@@ -75,14 +71,15 @@ type GZ struct {
 	Z ichang.Dizhi
 }
 
+// GenDay generates the details for a specific JD
 func genDay(jd float64, ly *LunarYear) Day {
 	var day Day
-	var d float64
 	jdN := jd2jdN(jd)
 	// 近似处理，精确到1毫秒，主要处理因截断导致的如59.99999秒在时辰交替点的判断出现的误差
 	tm := julian.JDToTime(jd).Round(time.Millisecond)
-
+	_ = tm
 	// 公历信息
+	var d float64
 	day.Jd = jdN
 	day.YN, day.MN, d = julian.JDToCalendar(jdN)
 	day.DN = int(d)
@@ -90,9 +87,12 @@ func genDay(jd float64, ly *LunarYear) Day {
 	mDay0W := julian.DayOfWeek(mDay0Jd)
 	day.Week = julian.DayOfWeek(jdN)
 	day.Weeki = int(math.Floor(float64(mDay0W+day.DN-1) / 7))
+
+	ly = checkLY(ly, day.YN, jdN)
+
 	// 农历信息
-	prev := (*(ly.months))[0]
-	for _, m := range *ly.months {
+	prev := ly.months[0]
+	for _, m := range ly.months {
 		if jdN < m.d0 {
 			break
 		}
@@ -153,6 +153,11 @@ func genDay(jd float64, ly *LunarYear) Day {
 	scI := time2sci(tm)
 	g, z = mod(mod(g, 5)*2+scI, 10), mod(scI+10, 12)
 	day.LTGZ = GZ{ichang.Tiangan(g), ichang.Dizhi(z)}
+	xzI := int(math.Floor((jdN - dz - 15) / 30.43685))
+	if xzI < 11 && jdN >= jd2jdN(beijingTime(ly.Terms[0][2*xzI+2])) {
+		xzI++
+	}
+	day.XZ = (xzI + 12) % 12
 	return day
 }
 
@@ -160,11 +165,23 @@ func (gz GZ) String() string {
 	return gz.G.String() + gz.Z.String()
 }
 
+// 公元2000年1月1日
+// 星期六 摩羯座
+// JD 2451545
 // 农历[狗年] 四月（大）三十
-// 戊戌年 戊戌月 戊戌日
-// 四柱：乙未 戊寅 丙辰 丁酉
+// 甲子年 甲子月 甲子日
+// 四柱：甲子 甲子 甲子 甲子
 func (d Day) String() string {
 	var b strings.Builder
+	y := d.YN
+	yh := "公元"
+	if y <= 0 {
+		yh += "前"
+		y = -y + 1
+	}
+	b.WriteString(fmt.Sprintf("%s%d年%d月%d日\n", yh, y, d.MN, d.DN))
+	b.WriteString("星期" + weekName[d.Week] + " " + xzName[d.XZ] + "座" + "\n")
+	b.WriteString(fmt.Sprintf("JD %d\n", int(d.Jd)))
 	b.WriteString("农历【" + d.LYSX.String() + "】")
 	leap := ""
 	if d.LMleap {
@@ -176,11 +193,142 @@ func (d Day) String() string {
 	}
 	b.WriteString(leap + monthName[d.LMN-1] + "（" + size + "）" + dayName[d.LDN-1] + "\n")
 	b.WriteString(d.LYGZ0.String() + "年 " + d.LMGZ0.String() + "月 " + d.LDGZ.String() + "日\n")
-
 	b.WriteString("四柱：" + d.LYGZ1.String() + " " + d.LMGZ1.String() + " " + d.LDGZ.String() + " " + d.LTGZ.String())
 	return b.String()
 }
 
+// Num   int     //公历月份
+// D0    float64 //月首儒略日数
+// Dn    int     //本月的天数
+// Week0 int     //月首的星期
+// WeekN int     //本月的总周数
+func (m Month) String() string {
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("%d月\n", m.Num))
+	b.WriteString("日  一  二  三  四  五  六\n")
+
+	k := 1
+	cnt := 7 - m.Week0
+Loop:
+	for i := 0; i < m.WeekN; i++ {
+		if i == 0 {
+			for j := 0; j < m.Week0; j++ {
+				b.WriteString(fmt.Sprintf("%4s", " "))
+			}
+		}
+		if i > 0 {
+			cnt = 7
+		}
+		for j := 0; j < cnt; j++ {
+			width := 2
+			if k < 10 && j == cnt-1 {
+				width = 1
+			}
+			b.WriteString(fmt.Sprintf("%-*d", width, k)) //左对齐
+			k++
+			if k > m.Dn {
+				b.WriteString("\n")
+				break Loop
+			}
+			if j == cnt-1 {
+				continue
+			}
+			b.WriteString(fmt.Sprintf("%2s", " "))
+		}
+		b.WriteString("\n")
+	}
+
+	return b.String()
+}
+
+// func (y Year) String() string {
+
+// }
 func time2sci(t time.Time) int {
 	return ((t.Hour() + 1) / 2) % 12
+}
+
+// DayCalendar 日历, 单独调用时ly可置nil，ly只是为了方便需要多次调用（如建月历）的时候无需多次建立农历
+func DayCalendar(y, m, d int, AD bool, ly *LunarYear) (Day, error) {
+	var day Day
+	if y <= 0 {
+		return day, errors.New("year should be positive num")
+	}
+	if !AD {
+		y = -y + 1
+	}
+	if m <= 0 || m > 12 {
+		return day, errors.New("month number is not valid")
+	}
+	cnt := monthDayCnt[m-1]
+	if m == 2 && julian.LeapYearGregorian(y) {
+		cnt++
+	}
+	if d > cnt {
+		return day, errors.New("invalid day number for this month")
+	}
+	jd00 := jd2jd00(julian.CalendarGregorianToJD(y, m, float64(d)))
+	jd := jd00 + float64(time.Now().Hour())/24
+
+	ly = checkLY(ly, y, jd00-0.5)
+
+	day = genDay(jd, ly)
+	return day, nil
+}
+
+// MonthCalendar 月历,单独调用时ly可置nil，ly只是为了方便需要多次调用（如建年历）的时候无需多次建立农历
+func MonthCalendar(y, m int, AD bool, ly *LunarYear) (Month, error) {
+	var month Month
+	if y <= 0 {
+		return month, errors.New("year should be positive num")
+	}
+	if !AD {
+		y = -y + 1
+	}
+	if m <= 0 || m > 12 {
+		return month, errors.New("month number is not valid")
+	}
+	jdN0 := julian.CalendarGregorianToJD(y, m, 1.5)
+	month.Num = m   //公历月份
+	month.D0 = jdN0 //月首儒略日数
+	cnt := monthDayCnt[m-1]
+	if m == 2 && julian.LeapYearGregorian(y) {
+		cnt++
+	}
+	month.Dn = cnt                          //本月的天数
+	month.Week0 = julian.DayOfWeek(jdN0)    //月首的星期
+	month.WeekN = (month.Week0+cnt-1)/7 + 1 //本月的总周数
+	h := time.Now().Hour()
+	jd := jd2jd00(jdN0) + float64(h)/24
+	days := make([]Day, cnt)
+	ly = checkLY(ly, y, jdN0)
+	for i := 0; i < cnt; i++ {
+		days[i] = genDay(jd+float64(i), ly)
+	}
+	month.Days = days
+	return month, nil
+}
+
+// YearCalendar 年历
+func YearCalendar(y int, AD bool) (Year, error) {
+	var year Year
+	yN := y
+	if y <= 0 {
+		return year, errors.New("year should be positive num")
+	}
+	if !AD {
+		yN = -y + 1
+	}
+	year.Num = yN
+	year.Leap = julian.LeapYearGregorian(y)
+	year.Months = make([]Month, 12)
+	ly := GenLunarYear(yN)
+	for i := 1; i <= 12; i++ {
+		m, err := MonthCalendar(y, i, AD, ly)
+		if err != nil {
+			return year, err
+		}
+		year.Months[i] = m
+	}
+	return year, nil
 }

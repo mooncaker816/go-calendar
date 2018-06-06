@@ -29,11 +29,11 @@ func init() {
 	}
 }
 
-// LunarYMD contains info of Lunar Year + Month + Day
-type LunarYMD struct {
-	Y, M, D int
-	Leap    bool
-}
+// // LunarYMD contains info of Lunar Year + Month + Day
+// type LunarYMD struct {
+// 	Y, M, D int
+// 	Leap    bool
+// }
 
 // LunarMonth 农历月
 type LunarMonth struct {
@@ -46,20 +46,20 @@ type LunarMonth struct {
 
 // LunarYear 农历年
 type LunarYear struct {
-	Year       int           // 该农历年年份
-	Months     *[]LunarMonth // 一整个农历年月份1-12（含闰月）
-	LeapN      int           // Months 中闰月的序号，-1表示没有闰月
-	SpringFest float64       // 春节的儒略日数
-	NatureYear               // 覆盖该农历年的2个农历自然年（冬至到冬至为一个自然年）
+	Year       int          // 该农历年年份
+	Months     []LunarMonth // 一整个农历年月份1-12（含闰月）
+	LeapN      int          // Months 中闰月的序号，-1表示没有闰月
+	SpringFest float64      // 春节的儒略日数
+	NatureYear              // 覆盖该农历年的2个农历自然年（冬至到冬至为一个自然年）
 }
 
 // NatureYear 两个农历自然年
 type NatureYear struct {
-	Terms  [2][]float64  // 两个自然年包含的节气
-	Shuoes [2][]float64  // 两个自然年包含的朔日
-	dzs    [3]float64    // 划分两个自然年的三个冬至
-	leap   [2]bool       // 两个自然年中是否有闰月
-	months *[]LunarMonth // 两个自然年的所有月份
+	Terms  [2][]float64 // 两个自然年包含的节气
+	Shuoes [2][]float64 // 两个自然年包含的朔日
+	dzs    [3]float64   // 划分两个自然年的三个冬至
+	leap   [2]bool      // 两个自然年中是否有闰月
+	months []LunarMonth // 两个自然年的所有月份
 }
 
 // GenLunarYear generates Lunar Year
@@ -157,7 +157,6 @@ func newmoonI(jde, prevnm float64, i int) float64 {
 
 // 建月，两个自然年之间的所有月份，包含一整个农历年月份
 func (ly *LunarYear) genLunarMonth() {
-	var ms []LunarMonth
 	monthnum := [2]int{12, 12}
 	leapI := [2]int{-1, -1}
 	for i := 0; i < 2; i++ {
@@ -177,6 +176,7 @@ func (ly *LunarYear) genLunarMonth() {
 	var offset int
 	ly.SpringFest, offset = getSpringFest(ly.Shuoes[0], leapI[0])
 
+	// var ms []LunarMonth
 	for i := 0; i < 2; i++ {
 		for j := 0; j < monthnum[i]; j++ {
 			var lm LunarMonth
@@ -203,19 +203,18 @@ func (ly *LunarYear) genLunarMonth() {
 			if lm.seq >= 10 {
 				lm.year--
 			}
-			ms = append(ms, lm)
+			// ms = append(ms, lm)
+			ly.months = append(ly.months, lm)
 		}
 	}
 
-	ly.months = &ms
 	length := 12
 	if ly.LeapN > -1 {
 		length++
 	}
-	// Ms := make([]LunarMonth, length)
-	// copy(Ms, ms[offset:offset+length])
-	Ms := ms[offset : offset+length]
-	ly.Months = &Ms
+
+	ly.Months = ly.months[offset : offset+length]
+
 	return
 }
 
@@ -262,40 +261,41 @@ func i2monthseq(i int) int {
 	return l - 1
 }
 
-// GregorianToLunarDate 北京时间转农历
-func GregorianToLunarDate(y, m, d int, ly *LunarYear) LunarYMD {
-	var lymd LunarYMD
-	day := float64(d) + 0.5
-	jdN := julian.CalendarGregorianToJD(y, m, day) // 儒略日数
-	if ly == nil || jdN < jd2jdN(ly.dzs[0]) {
-		ly = GenLunarYear(y)
-	}
-	if jdN >= jd2jdN(ly.dzs[2]) {
-		ly = GenLunarYear(y + 1)
-	}
+// // GregorianToLunarDate 北京时间转农历
+// func GregorianToLunarDate(y, m, d int, ly *LunarYear) LunarYMD {
+// 	var lymd LunarYMD
+// 	day := float64(d) + 0.5
+// 	jdN := julian.CalendarGregorianToJD(y, m, day) // 儒略日数
+// 	if ly == nil || jdN < jd2jdN(ly.dzs[0]) {
+// 		ly = GenLunarYear(y)
+// 	}
+// 	if jdN >= jd2jdN(ly.dzs[2]) {
+// 		ly = GenLunarYear(y + 1)
+// 	}
 
-	prev := (*(ly.months))[0]
-	for _, m := range *ly.months {
-		if jdN < m.d0 {
-			break
-		}
-		prev = m
-	}
-	lymd.D = int(jdN - prev.d0)
-	lymd.M = prev.seq
-	lymd.Y = prev.year
-	lymd.Leap = prev.leap
+// 	prev := ly.months[0]
 
-	return lymd
-}
+// 	for _, m := range ly.months {
+// 		if jdN < m.d0 {
+// 			break
+// 		}
+// 		prev = m
+// 	}
+// 	lymd.D = int(jdN - prev.d0)
+// 	lymd.M = prev.seq
+// 	lymd.Y = prev.year
+// 	lymd.Leap = prev.leap
 
-func (lymd LunarYMD) String() string {
-	leap := ""
-	if lymd.Leap {
-		leap = "闰"
-	}
-	return fmt.Sprintf("%d年%s%s%s", lymd.Y, leap, monthName[lymd.M], dayName[lymd.D])
-}
+// 	return lymd
+// }
+
+// func (lymd LunarYMD) String() string {
+// 	leap := ""
+// 	if lymd.Leap {
+// 		leap = "闰"
+// 	}
+// 	return fmt.Sprintf("%d年%s%s%s", lymd.Y, leap, monthName[lymd.M], dayName[lymd.D])
+// }
 
 // 将朔气力学时转为北京时间
 func beijingTime(jde float64) float64 {
@@ -352,7 +352,8 @@ func (ly LunarYear) Stat() {
 	fmt.Println("春节：")
 	fmt.Println(julian.JDToCalendar(ly.SpringFest))
 	fmt.Println("xxxxxxxxxxxxxxxxxx")
-	for _, m := range *ly.Months {
+	for _, m := range ly.Months {
+		// for _, m := range *ly.Months {
 		fmt.Println("月首：")
 		fmt.Println(julian.JDToCalendar(m.d0))
 		fmt.Println("月长：", m.dn)
@@ -379,7 +380,8 @@ func (ly LunarYear) Stat() {
 			// fmt.Println(julian.JDToCalendar(v))
 		}
 	}
-	for _, m := range *ly.months {
+	// for _, m := range *ly.months {
+	for _, m := range ly.months {
 		fmt.Println("月首：")
 		fmt.Println(julian.JDToCalendar(m.d0))
 		fmt.Println("月长：", m.dn)
@@ -388,4 +390,14 @@ func (ly LunarYear) Stat() {
 		fmt.Println("年：", m.year)
 		fmt.Println("==============")
 	}
+}
+
+func checkLY(ly *LunarYear, year int, jdN float64) *LunarYear {
+	if ly == nil || jdN < jd2jdN(ly.dzs[0]) {
+		ly = GenLunarYear(year)
+	}
+	if jdN >= jd2jdN(ly.dzs[2]) {
+		ly = GenLunarYear(year + 1)
+	}
+	return ly
 }
