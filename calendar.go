@@ -77,7 +77,6 @@ func genDay(jd float64, ly *LunarYear) Day {
 	jdN := jd2jdN(jd)
 	// 近似处理，精确到1毫秒，主要处理因截断导致的如59.99999秒在时辰交替点的判断出现的误差
 	tm := julian.JDToTime(jd).Round(time.Millisecond)
-	_ = tm
 	// 公历信息
 	var d float64
 	day.Jd = jdN
@@ -274,11 +273,11 @@ Loop:
 
 func (y Year) String() string {
 	var b strings.Builder
-	leap := ""
+	leap := "（平）"
 	if y.Leap {
 		leap = "（闰）"
 	}
-	b.WriteString(fmt.Sprintf("%13s%d年%s\n", " ", y.Num, leap))
+	b.WriteString(fmt.Sprintf("🗓️%13s%d年%s\n", " ", y.Num, leap))
 	for i := 0; i < 12; i++ {
 		b.WriteString(y.Months[i].String())
 		b.WriteString("\n")
@@ -291,7 +290,8 @@ func time2sci(t time.Time) int {
 }
 
 // DayCalendar 日历, 单独调用时ly可置nil，ly只是为了方便需要多次调用（如建月历）的时候无需多次建立农历
-func DayCalendar(y, m, d int, AD bool, ly *LunarYear) (Day, error) {
+// d 可以为小数，小数部分代表当天的时间，用于计算时辰
+func DayCalendar(y, m int, d float64, AD bool, ly *LunarYear) (Day, error) {
 	var day Day
 	if y <= 0 {
 		return day, errors.New("year should be positive num")
@@ -306,13 +306,13 @@ func DayCalendar(y, m, d int, AD bool, ly *LunarYear) (Day, error) {
 	if m == 2 && julian.LeapYearGregorian(y) {
 		cnt++
 	}
-	if d > cnt {
+	if int(math.Floor(d)) > cnt {
 		return day, errors.New("invalid day number for this month")
 	}
-	jd00 := jd2jd00(julian.CalendarGregorianToJD(y, m, float64(d)))
-	jd := jd00 + float64(time.Now().Hour())/24
-
-	ly = checkLY(ly, y, jd00-0.5)
+	// jd00 := jd2jd00(julian.CalendarGregorianToJD(y, m, float64(d)))
+	// jd := jd00 + float64(time.Now().Hour())/24
+	jd := julian.CalendarGregorianToJD(y, m, d)
+	ly = checkLY(ly, y, jd2jdN(jd))
 
 	day = genDay(jd, ly)
 	return day, nil
