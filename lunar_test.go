@@ -170,12 +170,9 @@ func Test1000yearsLunarLeap(t *testing.T) {
 						totalChan <- 1
 						leapMonth := ly.Months[ly.LeapN]
 						f := func(i int) bool {
-							// fmt.Println("inside:", i, leaps[i].year, leapMonth.year)
 							return leaps[i].year >= leapMonth.year
 						}
-						// fmt.Println(len(leaps))
 						idx := sort.Search(len(leaps), f)
-						// fmt.Println(idx)
 						if idx < len(leaps) && leaps[idx].year == leapMonth.year {
 							if leaps[idx].m == monthName[leapMonth.seq] {
 								goodChan <- leapMonth.year
@@ -241,7 +238,7 @@ func Test1000yearsLunarLeap(t *testing.T) {
 }
 
 // TestGenLunarYear list all the informations while generating the LunarYear struct
-// func TestGenLunarYear(t *testing.T) {
-// 	ly := GenLunarYear(2100)
-// 	ly.debug()
-// }
+func TestGenLunarYear(t *testing.T) {
+	ly := GenLunarYear(1900)
+	ly.debug()
+}

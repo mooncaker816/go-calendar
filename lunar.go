@@ -29,12 +29,6 @@ func init() {
 	}
 }
 
-// // LunarYMD contains info of Lunar Year + Month + Day
-// type LunarYMD struct {
-// 	Y, M, D int
-// 	Leap    bool
-// }
-
 // LunarMonth 农历月
 type LunarMonth struct {
 	d0   float64 // 月首儒略日数
@@ -261,43 +255,7 @@ func i2monthseq(i int) int {
 	return l - 1
 }
 
-// // GregorianToLunarDate 北京时间转农历
-// func GregorianToLunarDate(y, m, d int, ly *LunarYear) LunarYMD {
-// 	var lymd LunarYMD
-// 	day := float64(d) + 0.5
-// 	jdN := julian.CalendarGregorianToJD(y, m, day) // 儒略日数
-// 	if ly == nil || jdN < jd2jdN(ly.dzs[0]) {
-// 		ly = GenLunarYear(y)
-// 	}
-// 	if jdN >= jd2jdN(ly.dzs[2]) {
-// 		ly = GenLunarYear(y + 1)
-// 	}
-
-// 	prev := ly.months[0]
-
-// 	for _, m := range ly.months {
-// 		if jdN < m.d0 {
-// 			break
-// 		}
-// 		prev = m
-// 	}
-// 	lymd.D = int(jdN - prev.d0)
-// 	lymd.M = prev.seq
-// 	lymd.Y = prev.year
-// 	lymd.Leap = prev.leap
-
-// 	return lymd
-// }
-
-// func (lymd LunarYMD) String() string {
-// 	leap := ""
-// 	if lymd.Leap {
-// 		leap = "闰"
-// 	}
-// 	return fmt.Sprintf("%d年%s%s%s", lymd.Y, leap, monthName[lymd.M], dayName[lymd.D])
-// }
-
-// 将朔气力学时转为北京时间
+// 将力学时转为北京时间
 func beijingTime(jde float64) float64 {
 	return jde - deltat(jde) + float64(8)/24
 }
@@ -363,7 +321,6 @@ func (ly LunarYear) debug() {
 	fmt.Println(julian.JDToCalendar(ly.SpringFest))
 	fmt.Println("xxxxxxxxxxxxxxxxxx")
 	for _, m := range ly.Months {
-		// for _, m := range *ly.Months {
 		fmt.Println("月首：")
 		fmt.Println(julian.JDToCalendar(m.d0))
 		fmt.Println("月长：", m.dn)
@@ -373,24 +330,20 @@ func (ly LunarYear) debug() {
 		fmt.Println("==============")
 	}
 	fmt.Println("两个自然年是否有闰：", ly.leap)
-	// fmt.Println("两个自然年中冬至之间包含的朔日个数：", ly.shuoCnt[0], ly.shuoCnt[1])
+	fmt.Printf("ΔT≈%fs,寿星ΔT≈%fs\n", deltat(ly.dzs[0])*86400, deltat2(ly.dzs[0])*86400)
 	for i, dz := range ly.dzs {
-		fmt.Println("冬至：", i, jd2jdN(beijingTime(dz)))
-		// fmt.Println(julian.JDToCalendar(dz))
+		fmt.Printf("冬至:%d %6.f %s\n", i, jd2jdN(beijingTime(dz)), DT2SolarTime(dz))
 	}
 	for _, shuo := range ly.Shuoes {
 		for i, v := range shuo {
-			fmt.Println("朔：", i, jd2jdN(beijingTime(v)))
-			// fmt.Println(julian.JDToCalendar(v))
+			fmt.Printf("朔:%d %6.f %s\n", i, jd2jdN(beijingTime(v)), DT2SolarTime(v))
 		}
 	}
 	for _, term := range ly.Terms {
 		for i := 0; i < len(term); i = i + 2 {
-			fmt.Println("气：", i/2, jd2jdN(beijingTime(term[i])))
-			// fmt.Println(julian.JDToCalendar(v))
+			fmt.Printf("气:%d %6.f %s\n", i/2, jd2jdN(beijingTime(term[i])), DT2SolarTime(term[i]))
 		}
 	}
-	// for _, m := range *ly.months {
 	for _, m := range ly.months {
 		fmt.Println("月首：")
 		fmt.Println(julian.JDToCalendar(m.d0))
