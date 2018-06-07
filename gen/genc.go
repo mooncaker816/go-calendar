@@ -2,9 +2,43 @@ package main
 
 import (
 	"fmt"
+	"math"
+	"strings"
 
+	calendar "github.com/mooncaker816/go-calendar"
 	"github.com/mooncaker816/learnmeeus/v3/julian"
 )
+
+func init() {
+	suoS = "EqoFscDcrFpmEsF2DfFideFelFpFfFfFiaipqti1ksttikptikqckstekqttgkqttgkqteksttikptikq2fjstgjqttjkqttgkqt"
+	suoS += "ekstfkptikq2tijstgjiFkirFsAeACoFsiDaDiADc1AFbBfgdfikijFifegF1FhaikgFag1E2btaieeibggiffdeigFfqDfaiBkF"
+	suoS += "1kEaikhkigeidhhdiegcFfakF1ggkidbiaedksaFffckekidhhdhdikcikiakicjF1deedFhFccgicdekgiFbiaikcfi1kbFibef"
+	suoS += "gEgFdcFkFeFkdcfkF1kfkcickEiFkDacFiEfbiaejcFfffkhkdgkaiei1ehigikhdFikfckF1dhhdikcfgjikhfjicjicgiehdik"
+	suoS += "cikggcifgiejF1jkieFhegikggcikFegiegkfjebhigikggcikdgkaFkijcfkcikfkcifikiggkaeeigefkcdfcfkhkdgkegieid"
+	suoS += "hijcFfakhfgeidieidiegikhfkfckfcjbdehdikggikgkfkicjicjF1dbidikFiggcifgiejkiegkigcdiegfggcikdbgfgefjF1"
+	suoS += "kfegikggcikdgFkeeijcfkcikfkekcikdgkabhkFikaffcfkhkdgkegbiaekfkiakicjhfgqdq2fkiakgkfkhfkfcjiekgFebicg"
+	suoS += "gbedF1jikejbbbiakgbgkacgiejkijjgigfiakggfggcibFifjefjF1kfekdgjcibFeFkijcfkfhkfkeaieigekgbhkfikidfcje"
+	suoS += "aibgekgdkiffiffkiakF1jhbakgdki1dj1ikfkicjicjieeFkgdkicggkighdF1jfgkgfgbdkicggfggkidFkiekgijkeigfiski"
+	suoS += "ggfaidheigF1jekijcikickiggkidhhdbgcfkFikikhkigeidieFikggikhkffaffijhidhhakgdkhkijF1kiakF1kfheakgdkif"
+	suoS += "iggkigicjiejkieedikgdfcggkigieeiejfgkgkigbgikicggkiaideeijkefjeijikhkiggkiaidheigcikaikffikijgkiahi1"
+	suoS += "hhdikgjfifaakekighie1hiaikggikhkffakicjhiahaikggikhkijF1kfejfeFhidikggiffiggkigicjiekgieeigikggiffig"
+	suoS += "gkidheigkgfjkeigiegikifiggkidhedeijcfkFikikhkiggkidhh1ehigcikaffkhkiggkidhh1hhigikekfiFkFikcidhh1hit"
+	suoS += "cikggikhkfkicjicghiediaikggikhkijbjfejfeFhaikggifikiggkigiejkikgkgieeigikggiffiggkigieeigekijcijikgg"
+	suoS += "ifikiggkideedeijkefkfckikhkiggkidhh1ehijcikaffkhkiggkidhh1hhigikhkikFikfckcidhh1hiaikgjikhfjicjicgie"
+	suoS += "hdikcikggifikigiejfejkieFhegikggifikiggfghigkfjeijkhigikggifikiggkigieeijcijcikfksikifikiggkidehdeij"
+	suoS += "cfdckikhkiggkhghh1ehijikifffffkhsFngErD1pAfBoDd1BlEtFqA2AqoEpDqElAEsEeB2BmADlDkqBtC1FnEpDqnEmFsFsAFn"
+	suoS += "llBbFmDsDiCtDmAB2BmtCgpEplCpAEiBiEoFqFtEqsDcCnFtADnFlEgdkEgmEtEsCtDmADqFtAFrAtEcCqAE1BoFqC1F1DrFtBmF"
+	suoS += "tAC2ACnFaoCgADcADcCcFfoFtDlAFgmFqBq2bpEoAEmkqnEeCtAE1bAEqgDfFfCrgEcBrACfAAABqAAB1AAClEnFeCtCgAADqDoB"
+	suoS += "mtAAACbFiAAADsEtBqAB2FsDqpFqEmFsCeDtFlCeDtoEpClEqAAFrAFoCgFmFsFqEnAEcCqFeCtFtEnAEeFtAAEkFnErAABbFkAD"
+	suoS += "nAAeCtFeAfBoAEpFtAABtFqAApDcCGJ"
+
+	//1645-09-23开始7567个节气修正表
+	qiS = "FrcFs22AFsckF2tsDtFqEtF1posFdFgiFseFtmelpsEfhkF2anmelpFlF1ikrotcnEqEq2FfqmcDsrFor22FgFrcgDscFs22FgEe"
+	qiS += "FtE2sfFs22sCoEsaF2tsD1FpeE2eFsssEciFsFnmelpFcFhkF2tcnEqEpFgkrotcnEqrEtFermcDsrE222FgBmcmr22DaEfnaF22"
+	qiS += "2sD1FpeForeF2tssEfiFpEoeFssD1iFstEqFppDgFstcnEqEpFg11FscnEqrAoAF2ClAEsDmDtCtBaDlAFbAEpAAAAAD2FgBiBqo"
+	qiS += "BbnBaBoAAAAAAAEgDqAdBqAFrBaBoACdAAf1AACgAAAeBbCamDgEifAE2AABa1C1BgFdiAAACoCeE1ADiEifDaAEqAAFe1AcFbcA"
+	qiS += "AAAAF1iFaAAACpACmFmAAAAAAAACrDaAAADG0"
+}
 
 var shuoes = []struct {
 	y, m, d, delta int
@@ -40,9 +74,53 @@ var shuoes = []struct {
 	{1896, 2, 14, -1}, {1914, 11, 18, -1},
 	{1916, 2, 4, -1}, {1920, 11, 11, -1},
 }
+var oldnew = []string{
+	"J", "00",
+	"I", "000",
+	"H", "0000",
+	"G", "00000",
+	"t", "02",
+	"s", "002",
+	"r", "0002",
+	"q", "00002",
+	"p", "000002",
+	"o", "0000002",
+	"n", "00000002",
+	"m", "000000002",
+	"l", "0000000002",
+	"k", "01",
+	"j", "0101",
+	"i", "001",
+	"h", "001001",
+	"g", "0001",
+	"f", "00001",
+	"e", "000001",
+	"d", "0000001",
+	"c", "00000001",
+	"b", "000000001",
+	"a", "0000000001",
+	"A", "000000000000000000000000000000000000000000000000000000000000",
+	"B", "00000000000000000000000000000000000000000000000000",
+	"C", "0000000000000000000000000000000000000000",
+	"D", "000000000000000000000000000000",
+	"E", "00000000000000000000",
+	"F", "0000000000",
+}
+var suoS, qiS string
 
+func extract(s string) string {
+	return strings.NewReplacer(oldnew...).Replace(s)
+}
 func main() {
+	s := extract(suoS)
+	fmt.Println(len(s))
+	// fmt.Println(s)
 	for _, shuo := range shuoes {
-		fmt.Printf("%7.f %d\n", julian.CalendarGregorianToJD(shuo.y, shuo.m, float64(shuo.d)+0.5), shuo.delta)
+		jdN := julian.CalendarGregorianToJD(shuo.y, shuo.m, float64(shuo.d)+0.5)
+		fmt.Printf("%7.f %d\n", jdN, shuo.delta)
+		offset := int(math.Floor((jdN - 1947168 + 14) / 29.5306))
+		// fmt.Println("offset:", offset)
+		fmt.Println(string(s[offset]))
 	}
+	fmt.Println(calendar.GenLunarYear(1685))
 }

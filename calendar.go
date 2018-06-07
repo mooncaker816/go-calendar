@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/mooncaker816/learnmeeus/v3/julian"
+	sexa "github.com/soniakeys/sexagesimal"
+	"github.com/soniakeys/unit"
 )
 
 // 干支推算起始点
@@ -32,7 +34,13 @@ type Month struct {
 	Dn    int     //本月的天数
 	Week0 int     //月首的星期
 	WeekN int     //本月的总周数
+	Terms []Term  //本月的节气
 	Days  []Day   //该月的日
+}
+
+type Term struct {
+	JD   float64
+	Name string
 }
 
 // Day contains 1 Day's calendar info including Lunar info
@@ -268,6 +276,14 @@ Loop:
 		b.WriteString("\n")
 	}
 
+	for _, t := range m.Terms {
+		b.WriteString("\n")
+		_, _, day := julian.JDToCalendar(beijingTime(t.JD))
+		z, f := math.Modf(day)
+		d := int(z)
+		tm := unit.TimeFromDay(f)
+		b.WriteString(fmt.Sprintf("%s：%d日 %s", t.Name, d, sexa.FmtTime(tm)))
+	}
 	return b.String()
 }
 
@@ -344,6 +360,18 @@ func MonthCalendar(y, m int, AD bool, ly *LunarYear) (Month, error) {
 	jd := jd2jd00(jdN0) + float64(h)/24
 	days := make([]Day, cnt)
 	ly = checkLY(ly, y, jdN0)
+Loop:
+	for _, terms := range ly.Terms {
+		for i, term := range terms {
+			tjdN := jd2jdN(beijingTime(term))
+			if i <= 23 && tjdN >= jdN0 && tjdN <= jdN0+float64(cnt-1) {
+				month.Terms = append(month.Terms, Term{term, termName[i]})
+			}
+			if tjdN > jdN0+float64(cnt-1) {
+				break Loop
+			}
+		}
+	}
 	for i := 0; i < cnt; i++ {
 		days[i] = genDay(jd+float64(i), ly)
 	}

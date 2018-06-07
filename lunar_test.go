@@ -239,6 +239,7 @@ func Test1000yearsLunarLeap(t *testing.T) {
 
 // // TestGenLunarYear list all the informations while generating the LunarYear struct
 // func TestGenLunarYear(t *testing.T) {
-// 	ly := GenLunarYear(2700)
+// 	ly := GenLunarYear(1719)
 // 	ly.debug()
+// 	fmt.Println(YearCalendar(1719, true))
 // }

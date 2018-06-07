@@ -107,10 +107,12 @@ func (ly *LunarYear) moonShuoes() {
 		dz0, dz1 := ly.dzs[i], ly.dzs[i+1]
 		jde0 := dz0
 		nm0 := newmoonI(jde0, 0, 0)
-		nm0 = shuoC(nm0, shuoCorrect)
+		// fmt.Println("first cal newmoon:", jd2year(jde0), DT2SolarTime(dz0), DT2SolarTime(nm0))
 
 		if !sLEq(nm0, jde0) { // nm0>jde0 获得离冬至最近的前一个朔日，当冬至和朔日重合时，默认朔在前
-			jde0 -= 29.5306
+			// jde0 -= 29.5306
+			// jde0 -= 29.5306 / 2
+			jde0 -= 29.5306 - nm0 + jde0
 		}
 		prevnm := 0.0
 		for j := 0; j < 15; j++ { //计算第一个朔日（十一月初一）起的连续15个朔日
@@ -130,11 +132,12 @@ func (ly *LunarYear) moonShuoes() {
 
 func jd2year(jd float64) float64 {
 	year, m, d := julian.JDToCalendar(jd)
+	z, f := math.Modf(d)
 	yeardays := 365.
 	if julian.LeapYearGregorian(year) {
 		yeardays++
 	}
-	return float64(year) + float64(julian.DayOfYearGregorian(year, m, int(d)))/yeardays
+	return float64(year) + (float64(julian.DayOfYearGregorian(year, m, int(z)))+f)/yeardays
 }
 
 func newmoonI(jde, prevnm float64, i int) float64 {
@@ -142,9 +145,20 @@ func newmoonI(jde, prevnm float64, i int) float64 {
 	y := jd2year(nmjd)
 	s := moonphase.New(y)
 	// 测试过程中碰到不同的日期计算出的最近新月相同，这时只要再加一天进行计算
-	for s == prevnm {
-		nmjd++
+	// 也有可能碰到计算出的最近新月并不是最近，这时要只减一天进行计算
+	for prevnm > 0 && (s-prevnm > 40 || s == prevnm) {
+		if s == prevnm {
+			// fmt.Println("same as prevnm", nmjd, prevnm, s)
+			nmjd++
+		}
+		if s-prevnm > 40 {
+			// fmt.Println("miss a newmoon", nmjd, prevnm, s)
+			if s > nmjd {
+				nmjd--
+			}
+		}
 		s = moonphase.New(jd2year(nmjd))
+		// fmt.Println("after correction:", nmjd, prevnm, s)
 	}
 	return s
 }
