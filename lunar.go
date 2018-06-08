@@ -147,13 +147,17 @@ func jd2year(jd float64) float64 {
 	return float64(year) + (float64(julian.DayOfYearGregorian(year, m, int(z)))+f)/yeardays
 }
 
-func avgRange(jde float64) bool {
+func avgShuoRange(jde float64) bool {
 	return jde < 1947168-14 && jde >= 1457698-14
+}
+
+func avgQiRange(jde float64) bool {
+	return jde < 2322147-7 && jde >= 1640650-7
 }
 
 func newmoonI(jde, prevnm float64, i int) SQ {
 	nmjd := jde + 29.5306*float64(i)
-	if avgRange(nmjd) {
+	if avgShuoRange(nmjd) {
 		return SQ{avgShuo(nmjd), true}
 	}
 	y := jd2year(nmjd)
