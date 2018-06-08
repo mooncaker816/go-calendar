@@ -44,14 +44,17 @@ type SolarTime struct {
 }
 
 // DT2SolarTime converts DT to local time
-func DT2SolarTime(jde float64) SolarTime {
+func DT2SolarTime(sq SQ) SolarTime {
 	// log.Println(julian.JDToTime(jde))
 	var st SolarTime
-	ΔT := dt.Interp10A(jde)
-	jd := jde - ΔT.Day() // UT
+	jd := sq.JD
+	if !sq.Avg {
+		ΔT := dt.Interp10A(sq.JD)
+		jd = sq.JD - ΔT.Day() + float64(8)/24
+	}
 	// jd0h := math.Floor(jd+0.5) - 0.5 //当天0点 jd
 	var day float64
-	st.Y, st.M, day = julian.JDToCalendar(jd + float64(8)/24)
+	st.Y, st.M, day = julian.JDToCalendar(jd)
 	dz, f := math.Modf(day)
 	st.D = int(dz)
 	st.T = unit.TimeFromDay(f)

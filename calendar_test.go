@@ -2,6 +2,7 @@ package calendar
 
 import (
 	"fmt"
+	"testing"
 
 	"github.com/mooncaker816/learnmeeus/v3/julian"
 )
@@ -430,4 +431,38 @@ func ExampleYearCalendar() {
 	//🌛  14
 	//大雪：7日 6ʰ32ᵐ39ˢ
 	//冬至：22日 27ᵐ56ˢ
+}
+
+var l2gtc = []struct {
+	y, m, d    int
+	AD, leap   bool
+	yg, mg, dg int
+	err        error
+}{
+	{2017, 6, 3, true, true, 2017, 7, 25, nil},                 //2017年闰六月初三 -> 2017-7-25
+	{2017, 7, 3, true, true, 0, 0, 0, errConvLToG},             //2017年闰七月初三 -> error
+	{2016, 12, 30, true, false, 2017, 1, 27, nil},              //2016年腊月三十 -> 2017-1-27
+	{2017, 1, 1, true, false, 2017, 1, 28, nil},                //2017年正月初一 -> 2017-1-28
+	{2017, 1, 30, true, false, 0, 0, 0, errDateNumExceedLunar}, //2017年正月三十 -> error
+	{2017, 1, 31, true, false, 0, 0, 0, errDateNumLunar},       //2017年正月三十一 -> error
+	{2017, 13, 1, true, false, 0, 0, 0, errMonthNum},           //2017年十三月初一 -> error
+	{1987, 4, 1, true, false, 1987, 4, 28, nil},                //1987年四月初一 -> 1987-4-28
+	{1987, 3, 30, true, false, 1987, 4, 27, nil},               //1987年三月三十 -> 1987-4-27
+	{-1, 1, 5, true, false, 0, 0, 0, errYearNum},               //-1年正月初五 -> error
+	{1, 12, 29, false, false, 1, 2, 11, nil},                   //公元前1年除夕 -> 1-2-11
+	{1, 1, 1, true, false, 1, 2, 12, nil},                      //公元1年春节 -> 1-2-12
+	{2, 12, 29, false, false, 0, 1, 24, nil},                   //公元前2年除夕 -> 0-1-24
+	{1, 1, 1, false, false, 0, 1, 25, nil},                     //公元前1年春节 -> 0-1-25
+	{211, 5, 5, false, false, -210, 6, 8, nil},                 //公元前211年五月初五 -> -210-6-8
+	{389, 11, 1, false, false, 0, 1, 25, nil},                  //公元前389年十一月初一 -> -388-10-16
+	{722, 1, 1, false, false, 0, 1, 25, nil},                   //公元前722年春节 -> -721-1-25
+}
+
+func TestLunarToGregorian(t *testing.T) {
+	for _, tc := range l2gtc {
+		yg, mg, dg, err := LunarToGregorian(tc.y, tc.m, tc.d, tc.AD, tc.leap)
+		if tc.err != err || tc.yg != yg || tc.mg != mg || tc.dg != dg {
+			t.Errorf("got err: %v date: %d-%d-%d, expected err: %v date: %d-%d-%d\n", err, yg, mg, dg, tc.err, tc.yg, tc.mg, tc.dg)
+		}
+	}
 }

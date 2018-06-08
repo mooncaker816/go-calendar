@@ -20,6 +20,17 @@ const (
 	J2000jzr = 2451551 // 2000-1-7 甲子日
 )
 
+var (
+	errYearNum            = errors.New("year num should be positive")
+	errMonthNum           = errors.New("month num should be 1-12")
+	errDateNum            = errors.New("date num should GE 1")
+	errDateNumExceed      = errors.New("date num exceeds the maximun date num of the prodived month")
+	errDateNumLunar       = errors.New("date num should be 1-30 for lunar month")
+	errDateNumExceedLunar = errors.New("date num exceeds the maximun date num of the provided lunar month")
+	errConvLToG           = errors.New("failed convert lunar date to gregorian date")
+	errConvGToL           = errors.New("failed convert gregorian date to lunar date")
+)
+
 // Year contains 1 Gregorian year's calendar info including Lunar info
 type Year struct {
 	Num    int
@@ -39,7 +50,7 @@ type Month struct {
 }
 
 type Term struct {
-	JD   float64
+	SQ
 	Name string
 }
 
@@ -79,7 +90,7 @@ type GZ struct {
 	Z ichang.Dizhi
 }
 
-// GenDay generates the details for a specific JD
+// genDay generates the details for a specific JD
 func genDay(jd float64, ly *LunarYear) Day {
 	var day Day
 	jdN := jd2jdN(jd)
@@ -278,7 +289,7 @@ Loop:
 
 	for _, t := range m.Terms {
 		b.WriteString("\n")
-		_, _, day := julian.JDToCalendar(beijingTime(t.JD))
+		_, _, day := julian.JDToCalendar(beijingTime(t.SQ))
 		z, f := math.Modf(day)
 		d := int(z)
 		tm := unit.TimeFromDay(f)
@@ -305,26 +316,17 @@ func time2sci(t time.Time) int {
 	return ((t.Hour() + 1) / 2) % 12
 }
 
-// DayCalendar 日历, 单独调用时ly可置nil，ly只是为了方便需要多次调用（如建月历）的时候无需多次建立农历
+// DayCalendar generates the Day Calendar including Lunar infomation according to the provided Gregorian date
+// 以格里历为基准附加农历信息的日历
+// 单独调用时ly可置nil，ly只是为了方便需要多次调用（如建月历）的时候无需多次建立农历
 // d 可以为小数，小数部分代表当天的时间，用于计算时辰
 func DayCalendar(y, m int, d float64, AD bool, ly *LunarYear) (Day, error) {
 	var day Day
-	if y <= 0 {
-		return day, errors.New("year should be positive num")
+	y, err := chkNum(y, m, int(math.Floor(d)), AD, false)
+	if err != nil {
+		return day, err
 	}
-	if !AD {
-		y = -y + 1
-	}
-	if m <= 0 || m > 12 {
-		return day, errors.New("month number is not valid")
-	}
-	cnt := monthDayCnt[m-1]
-	if m == 2 && julian.LeapYearGregorian(y) {
-		cnt++
-	}
-	if int(math.Floor(d)) > cnt {
-		return day, errors.New("invalid day number for this month")
-	}
+
 	// jd00 := jd2jd00(julian.CalendarGregorianToJD(y, m, float64(d)))
 	// jd := jd00 + float64(time.Now().Hour())/24
 	jd := julian.CalendarGregorianToJD(y, m, d)
@@ -334,17 +336,19 @@ func DayCalendar(y, m int, d float64, AD bool, ly *LunarYear) (Day, error) {
 	return day, nil
 }
 
-// MonthCalendar 月历,单独调用时ly可置nil，ly只是为了方便需要多次调用（如建年历）的时候无需多次建立农历
+// MonthCalendar generates the Month Calendar including Lunar infomation according to the provided Gregorian month
+// 以格里历为基准附加农历信息的月历
+// 单独调用时ly可置nil，ly只是为了方便需要多次调用（如建年历）的时候无需多次建立农历
 func MonthCalendar(y, m int, AD bool, ly *LunarYear) (Month, error) {
 	var month Month
 	if y <= 0 {
-		return month, errors.New("year should be positive num")
+		return month, errYearNum
 	}
 	if !AD {
 		y = -y + 1
 	}
-	if m <= 0 || m > 12 {
-		return month, errors.New("month number is not valid")
+	if m < 1 || m > 12 {
+		return month, errMonthNum
 	}
 	jdN0 := julian.CalendarGregorianToJD(y, m, 1.5)
 	month.Num = m   //公历月份
@@ -379,12 +383,13 @@ Loop:
 	return month, nil
 }
 
-// YearCalendar 年历
+// YearCalendar generates the Year Calendar including Lunar infomation according to the provided Gregorian year
+// 以格里历为基准附加农历信息的年历
 func YearCalendar(y int, AD bool) (Year, error) {
 	var year Year
 	yN := y
 	if y <= 0 {
-		return year, errors.New("year should be positive num")
+		return year, errYearNum
 	}
 	if !AD {
 		yN = -y + 1
@@ -401,4 +406,91 @@ func YearCalendar(y int, AD bool) (Year, error) {
 		year.Months[i] = m
 	}
 	return year, nil
+}
+
+// LunarToGregorian converts Lunar date to Gregorian date
+// 农历日期转格里历日期
+func LunarToGregorian(y, m, d int, AD, leap bool) (yg, mg, dg int, err error) {
+	y, err = chkNum(y, m, d, AD, true)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	ly := GenLunarYear(y)
+	// if !AD {
+	// 	fmt.Println(y)
+	// 	ly.debug()
+	// }
+	for _, month := range ly.Months {
+		if month.seq+1 == m && month.leap == leap {
+			if d > month.dn {
+				return 0, 0, 0, errDateNumExceedLunar
+			}
+			jd00 := jd2jd00(month.d0 + float64(d-1))
+			yg, mg, dgf := julian.JDToCalendar(jd00)
+			dg = int(dgf)
+			return yg, mg, dg, nil
+		}
+	}
+	return 0, 0, 0, errConvLToG
+}
+
+// GregorianToLunar converts Gregorian date to Lunar date
+// 格里历日期转农历日期
+func GregorianToLunar(y, m, d int, AD bool) (yl, ml, dl int, leap bool, err error) {
+	y, err = chkNum(y, m, d, AD, false)
+	if err != nil {
+		return 0, 0, 0, false, err
+	}
+	jdN := julian.CalendarGregorianToJD(y, m, float64(d)+0.5)
+	ly := GenLunarYear(y)
+	prev := ly.months[0]
+	ok := false
+	for _, m := range ly.months {
+		if jdN < m.d0 {
+			ok = true
+			break
+		}
+		prev = m
+	}
+	if ok {
+		yl = prev.year
+		ml = prev.seq + 1
+		dl = int(jdN-prev.d0) + 1
+		leap = prev.leap
+		return yl, ml, dl, leap, nil
+	}
+	return 0, 0, 0, false, errConvGToL
+}
+
+func chkNum(y, m, d int, AD, lunar bool) (int, error) {
+	// check year num
+	if y <= 0 {
+		return y, errYearNum
+	}
+	if !AD {
+		y = -y + 1
+	}
+	// check month num
+	if m < 1 || m > 12 {
+		return y, errMonthNum
+	}
+	// check date num for lunar month
+	if lunar {
+		if d < 1 || d > 30 {
+			return y, errDateNumLunar
+		}
+		return y, nil
+	}
+	// check date num for gregorian month
+	if d < 1 {
+		return y, errDateNum
+	}
+	max := monthDayCnt[m-1]
+	if m == 2 && julian.LeapYearGregorian(y) {
+		max++
+	}
+	if d > max {
+		return y, errDateNumExceed
+	}
+	return y, nil
 }
