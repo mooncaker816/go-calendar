@@ -2,8 +2,17 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"strings"
+
+	"github.com/RoaringBitmap/roaring"
+
+	"github.com/mooncaker816/go-calendar"
+
+	pp "github.com/mooncaker816/learnmeeus/v3/planetposition"
+
+	"github.com/mooncaker816/learnmeeus/v3/solar"
 
 	dt "github.com/mooncaker816/learnmeeus/v3/deltat"
 
@@ -117,7 +126,8 @@ func extract(s string) string {
 }
 func main() {
 	s := extract(suoS)
-	fmt.Println(len(s))
+	q := extract(qiS)
+	// fmt.Println(len(s), len(q))
 	// fmt.Println(s)
 	// for _, shuo := range shuoes {
 	// 	jdN := julian.CalendarGregorianToJD(shuo.y, shuo.m, float64(shuo.d)+0.5)
@@ -128,18 +138,99 @@ func main() {
 	// }
 	// fmt.Println(calendar.GenLunarYear(1685))
 	shuos := getShuo([]byte(s))
-	count := 0
-	for i, v := range shuos {
-		if v.old != math.Floor(v.real+0.5) {
-			count++
-			y, m, d := julian.JDToCalendar(v.old)
-			fmt.Println(i, y, m, d)
-			y, m, d = julian.JDToCalendar(math.Floor(v.real + 0.5))
-			fmt.Println(i, y, m, d, julian.JDToTime(v.real))
+	qis := getQi([]byte(q))
+	counts := 0
+	counts1 := 0
+	counts2 := 0
+	countq := 0
+	countq1 := 0
+	countq2 := 0
+	ra1 := roaring.New()
+	for _, v := range shuos {
 
+		jdN := math.Floor(v.real + 0.5)
+		if v.old != jdN {
+			counts++
+			delta := v.old - jdN
+			// y, m, d := julian.JDToCalendar(v.old)
+			// fmt.Println(i, y, m, d)
+			// y, m, d = julian.JDToCalendar(math.Floor(v.real + 0.5))
+			// fmt.Println(i, y, m, d, julian.JDToTime(v.real))
+			// 1947877
+			if delta == -1 {
+				counts1++
+				ra1.Add(uint32(jdN))
+				fmt.Printf("%7d,%s,%d\n", int(jdN)-1947877, calendar.DT2SolarTime(calendar.JDPlus{jdN, true}), int(delta))
+			}
 		}
 	}
-	fmt.Println(len(shuos), count)
+	fmt.Println("++++++++++++++++++++++++++++++++++++")
+	ra2 := roaring.New()
+	for _, v := range shuos {
+		jdN := math.Floor(v.real + 0.5)
+		if v.old != jdN {
+			delta := v.old - jdN
+			// y, m, d := julian.JDToCalendar(v.old)
+			// fmt.Println(i, y, m, d)
+			// y, m, d = julian.JDToCalendar(math.Floor(v.real + 0.5))
+			// fmt.Println(i, y, m, d, julian.JDToTime(v.real))
+			// 1949825
+			if delta == 1 {
+				counts2++
+				ra2.Add(uint32(jdN))
+				fmt.Printf("%7d,%s,%d\n", int(jdN)-1949825, calendar.DT2SolarTime(calendar.JDPlus{jdN, true}), int(delta))
+			}
+		}
+	}
+	fmt.Println("++++++++++++++++++++++++++++++++++++")
+	ra3 := roaring.New()
+	for _, v := range qis {
+		jdN := math.Floor(v.real + 0.5)
+		if v.old != jdN {
+			delta := v.old - jdN
+			countq++
+			// y, m, d := julian.JDToCalendar(v.old)
+			// fmt.Println(i, y, m, d)
+			// y, m, d = julian.JDToCalendar(math.Floor(v.real + 0.5))
+			// fmt.Println(i, y, m, d, julian.JDToTime(v.real))
+			// 2322344
+			if delta == -1 {
+				countq1++
+				ra3.Add(uint32(jdN))
+				fmt.Printf("%7d,%s,%d\n", int(jdN)-2322344, calendar.DT2SolarTime(calendar.JDPlus{jdN, true}), int(delta))
+			}
+		}
+	}
+	fmt.Println("++++++++++++++++++++++++++++++++++++")
+	ra4 := roaring.New()
+	for _, v := range qis {
+		jdN := math.Floor(v.real + 0.5)
+		if v.old != jdN {
+			delta := v.old - jdN
+			// y, m, d := julian.JDToCalendar(v.old)
+			// fmt.Println(i, y, m, d)
+			// y, m, d = julian.JDToCalendar(math.Floor(v.real + 0.5))
+			// fmt.Println(i, y, m, d, julian.JDToTime(v.real))
+			// 2322468
+			if delta == 1 {
+				countq2++
+				ra4.Add(uint32(jdN))
+				fmt.Printf("%7d,%s,%d\n", int(jdN)-2322468, calendar.DT2SolarTime(calendar.JDPlus{jdN, true}), int(delta))
+			}
+		}
+	}
+	fmt.Println(ra1.ToBase64())
+	fmt.Println(ra2.ToBase64())
+	fmt.Println(ra3.ToBase64())
+	fmt.Println(ra4.ToArray())
+	str, _ := ra4.ToBase64()
+	fmt.Println(str)
+	b, _ := ra4.ToBytes()
+	fmt.Println(b)
+	bin, _ := ra4.MarshalBinary()
+	fmt.Println(bin)
+	fmt.Println(len(shuos), counts, counts1, counts2)
+	fmt.Println(len(qis), countq, countq1, countq2)
 }
 
 //朔直线拟合参数
@@ -201,7 +292,35 @@ func lowShuo(jde float64, correct []byte) float64 {
 	return shuolow + 2451545
 }
 
+func lowQi(jde float64, correct []byte) float64 {
+	W := math.Floor((jde+7-2451259)/365.2422*24) * math.Pi / 12
+	n := correct[int(math.Floor((jde-2322147.76+7)/365.2422*24))] //找定朔修正值
+	v := 628.3319653318
+	t := (W - 4.895062166) / v                                                                            //第一次估算,误差2天以内
+	t -= (53*t*t + 334116*math.Cos(4.67+628.307585*t) + 2061*math.Cos(2.678+628.3076*t)*t) / v / 10000000 //第二次估算,误差2小时以内
+
+	L := 48950621.66 + 6283319653.318*t + 53*t*t + //平黄经
+		+334166*math.Cos(4.669257+628.307585*t) + //地球椭圆轨道级数展开
+		+3489*math.Cos(4.6261+1256.61517*t) + //地球椭圆轨道级数展开
+		+2060.6*math.Cos(2.67823+628.307585*t)*t + //一次泊松项
+		-994 - 834*math.Sin(2.1824-33.75705*t) //光行差与章动修正
+
+	t -= (L/10000000-W)/628.332 + (32*(t+1.8)*(t+1.8)-20)/86400/36525
+	qilow := math.Floor(t*36525 + float64(8)/24 + 0.5)
+	if n == '1' {
+		qilow++
+	}
+	if n == '2' {
+		qilow--
+	}
+	return qilow + 2451545
+}
+
 type shuo struct {
+	old, real float64
+}
+
+type qi struct {
 	old, real float64
 }
 
@@ -224,6 +343,40 @@ func getShuo(correct []byte) []shuo {
 		s = append(s, shuo{lowshuo, highshuo})
 	}
 	return s
+}
+
+func getQi(correct []byte) []qi {
+	var q []qi
+	// for i := 1457698.; i < 1947168-14; i += 29.5306 {
+	// 	y := jd2year(i)
+	// 	s = append(s, shuo{avgShuo(i), math.Floor(beijingTime(moonphase.MeanNew(y)) + 0.5)})
+	// }
+	hj := unit.Angle(math.Pi)
+	for i := 2322147.76 + 7; i < 2436935; i += 15.2184 {
+		lowqi := lowQi(i, correct)
+		hj += unit.Angle(math.Pi / 12) // 节气对应的黄经
+		hj = hj.Mod1()
+		// k := hj
+		earth, err := pp.LoadPlanet(pp.Earth)
+		if err != nil {
+			log.Fatalf("can not load planet: %v", err)
+		}
+		highqi := 0.
+		for {
+			λ, _, _ := solar.ApparentVSOP87(earth, i)
+			c := 58 * (hj - λ).Sin()
+			i += c
+			if math.Abs(c) < .000005 {
+				break
+			}
+		}
+		highqi = beijingTime(i)
+		// for math.Abs(highqi-lowqi) > 15 {
+		// 	k +=
+		// }
+		q = append(q, qi{lowqi, highqi})
+	}
+	return q
 }
 
 func jd2year(jd float64) float64 {

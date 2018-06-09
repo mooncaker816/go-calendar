@@ -50,7 +50,7 @@ type Month struct {
 }
 
 type Term struct {
-	SQ
+	JDPlus
 	Name string
 }
 
@@ -289,7 +289,7 @@ Loop:
 
 	for _, t := range m.Terms {
 		b.WriteString("\n")
-		_, _, day := julian.JDToCalendar(beijingTime(t.SQ))
+		_, _, day := julian.JDToCalendar(beijingTime(t.JDPlus))
 		z, f := math.Modf(day)
 		d := int(z)
 		tm := unit.TimeFromDay(f)

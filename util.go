@@ -44,7 +44,7 @@ type SolarTime struct {
 }
 
 // DT2SolarTime converts DT to local time
-func DT2SolarTime(sq SQ) SolarTime {
+func DT2SolarTime(sq JDPlus) SolarTime {
 	// log.Println(julian.JDToTime(jde))
 	var st SolarTime
 	jd := sq.JD
