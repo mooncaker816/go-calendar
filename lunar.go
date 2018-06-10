@@ -4,10 +4,14 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"sort"
+	"strings"
 
+	dt "github.com/mooncaker816/learnmeeus/v3/deltat"
 	"github.com/mooncaker816/learnmeeus/v3/julian"
 	"github.com/mooncaker816/learnmeeus/v3/moonphase"
 
+	sexa "github.com/soniakeys/sexagesimal"
 	"github.com/soniakeys/unit"
 
 	pp "github.com/mooncaker816/learnmeeus/v3/planetposition"
@@ -46,6 +50,8 @@ type LunarYear struct {
 	LeapN      int           // Months 中闰月的序号，-1表示没有闰月
 	SpringFest float64       // 春节的儒略日数
 	NatureYear               // 覆盖该农历年的2个农历自然年（冬至到冬至为一个自然年）
+	debug      bool
+	debugyears []int
 }
 
 // NatureYear 两个农历自然年
@@ -60,12 +66,42 @@ type NatureYear struct {
 // JDPlus 朔气JD，Avg是否为平朔气
 type JDPlus struct {
 	JD  float64
-	Avg bool
+	Avg bool //平朔平气，已考虑了ΔT和北京时差8h
+}
+
+func (jdp JDPlus) String() string {
+	jd := jdp.JD
+	if !jdp.Avg {
+		ΔT := dt.Interp10A(jd)
+		jd = jd - ΔT.Day() + float64(8)/24
+	}
+
+	y, m, day := julian.JDToCalendar(jd)
+	dz, df := math.Modf(day)
+	d := int(dz)
+	tm := unit.TimeFromDay(df)
+	return fmt.Sprintf("%d年%d月%d日 %s", y, m, d, sexa.FmtTime(tm))
+}
+
+// Option is a function to modify the LunarYear's options
+type Option func(ly *LunarYear)
+
+// Debug turns on debug mode,
+// if years are specified, then only those years will be debuged,
+// otherwise each year will be debuged.
+func Debug(years ...int) Option {
+	return func(ly *LunarYear) {
+		ly.debug = true
+		ly.debugyears = years
+	}
 }
 
 // GenLunarYear generates Lunar Year
-func GenLunarYear(year int) *LunarYear {
+func GenLunarYear(year int, opts ...Option) *LunarYear {
 	ly := new(LunarYear)
+	for _, opt := range opts {
+		opt(ly)
+	}
 	ly.getPeriod(year)
 	ly.Year = year
 	ly.LeapN = -1
@@ -73,15 +109,26 @@ func GenLunarYear(year int) *LunarYear {
 	ly.solarTerms()    // 计算从这三个冬至间共49个节气
 	ly.moonShuoes()    // 对每个冬至计算从冬至之前的一个合朔日起，连续15个合朔日
 	ly.genLunarMonth() // 排月
+	ly.details()
 	return ly
 }
 
 // 计算冬至
 func (ly *LunarYear) dz() {
-	y := ly.GYear
-	ly.dzs[0] = JDPlus{solstice.December2(y-1, earth), false}
-	ly.dzs[1] = JDPlus{solstice.December2(y, earth), false}
-	ly.dzs[2] = JDPlus{solstice.December2(y+1, earth), false}
+	y := ly.GYear - 1
+	for i := 0; i < 3; i++ {
+		tmp := solstice.December2(y, earth)
+		if avgQiRange(tmp) {
+			ly.dzs[i] = avgSQ(tmp, 7, avgQiTab)
+		} else {
+			ly.dzs[i] = JDPlus{tmp, false}
+		}
+		ly.dzs[i] = qiC(ly.dzs[i])
+		y++
+	}
+	// ly.dzs[0] = JDPlus{solstice.December2(y-1, earth), false}
+	// ly.dzs[1] = JDPlus{solstice.December2(y, earth), false}
+	// ly.dzs[2] = JDPlus{solstice.December2(y+1, earth), false}
 }
 
 // 计算节气
@@ -121,7 +168,6 @@ func (ly *LunarYear) moonShuoes() {
 		jde0 := dz0
 
 		nm0 := newmoonI(jde0.JD, 0, 0)
-		// fmt.Println("first cal newmoon:", jd2year(jde0), DT2SolarTime(dz0), DT2SolarTime(nm0))
 
 		if !sLEq(nm0, jde0) { // nm0>jde0 获得离冬至最近的前一个朔日，当冬至和朔日重合时，默认朔在前
 			// jde0 -= 29.5306
@@ -245,12 +291,13 @@ var avgQiTab = []float64{ //气直线拟合参数
 
 func avgSQ(jde float64, delta float64, avgTab []float64) JDPlus {
 	s := 0.
-	for i := 0; i < len(avgTab); i += 2 {
-		if jde+delta > avgTab[i] {
-			s = avgTab[i] + avgTab[i+1]*math.Floor((jde+delta-avgTab[i])/avgTab[i+1])
+	i := 0
+	for ; i < len(avgTab); i += 2 {
+		if jde+delta < avgTab[i+2] {
 			break
 		}
 	}
+	s = avgTab[i] + avgTab[i+1]*math.Floor((jde+delta-avgTab[i])/avgTab[i+1])
 	s = math.Floor(s + 0.5)
 	if s == 1683460 { //如果使用太初历计算-103年1月24日的朔日,结果得到的是23日,这里修正为24日(实历)。修正后仍不影响-103的无中置闰。如果使用秦汉历，得到的是24日，本行D不会被执行。
 		s++
@@ -492,43 +539,83 @@ func checkLY(ly *LunarYear, year int, jdN float64) *LunarYear {
 }
 
 // debug testing only
-func (ly LunarYear) debug() {
-	fmt.Println("年：", ly.Year)
+type tag struct {
+	key  string
+	desc string
+	JDPlus
+}
+
+func (ly LunarYear) details() {
+	if !ly.debug {
+		return
+	}
+	if len(ly.debugyears) == 0 { // debug mode for each year
+		goto debug
+	}
+	for _, y := range ly.debugyears { // debug mode only for provided years
+		if ly.Year == y {
+			goto debug
+		}
+	}
+	return
+debug:
+	fmt.Println("=====================DEBUG BEGIN========================")
+	fmt.Println("=====================Year Information===================")
+	fmt.Println("农历年：", ly.Year)
 	fmt.Println("闰月：", ly.LeapN+1)
-	fmt.Println("春节：")
-	fmt.Println(julian.JDToCalendar(ly.SpringFest))
-	fmt.Println("xxxxxxxxxxxxxxxxxx")
+	fmt.Println("春节：", JDPlus{ly.SpringFest - 0.5, true})
+	fmt.Println("=====================Month Information==================")
 	for _, m := range ly.Months {
-		fmt.Println("月首：")
-		fmt.Println(julian.JDToCalendar(m.d0))
+		fmt.Println("月首：", JDPlus{m.d0 - 0.5, true})
 		fmt.Println("月长：", m.dn)
 		fmt.Println("闰：", m.leap)
 		fmt.Println("月：", m.seq+1)
 		fmt.Println("年：", m.year)
-		fmt.Println("==============")
+		fmt.Println("---------------------------------------------------")
 	}
-	fmt.Println("两个自然年是否有闰：", ly.leap)
+	fmt.Println("=====================Other Information==================")
 	fmt.Printf("ΔT≈%fs,寿星ΔT≈%fs\n", deltat(ly.dzs[0].JD)*86400, deltat2(ly.dzs[0].JD)*86400)
+	fmt.Println("两个自然年是否有闰：", ly.leap)
 	for i, dz := range ly.dzs {
-		fmt.Printf("冬至:%d %6.f %s\n", i, jd2jdN(beijingTime(dz)), DT2SolarTime(dz))
+		fmt.Printf("冬至:%d %6.f %s\n", i, jd2jdN(beijingTime(dz)), dz)
 	}
-	for _, shuo := range ly.Shuoes {
-		for i, v := range shuo {
-			fmt.Printf("朔:%d %6.f %s\n", i, jd2jdN(beijingTime(v)), DT2SolarTime(v))
+
+	var combines [2][]tag
+	for i, shuo := range ly.Shuoes {
+		for j, s := range shuo {
+			key := fmt.Sprintf("%7.f%d", jd2jdN(beijingTime(s)), 1)
+			desc := fmt.Sprintf("朔:%d", j)
+			combines[i] = append(combines[i], tag{key, desc, s})
 		}
 	}
-	for _, term := range ly.Terms {
-		for i := 0; i < len(term); i = i + 2 {
-			fmt.Printf("气:%d %6.f %s\n", i/2, jd2jdN(beijingTime(term[i])), DT2SolarTime(term[i]))
+	for i, term := range ly.Terms {
+		for j, t := range term {
+			if j%2 != 0 {
+				continue
+			}
+			key := fmt.Sprintf("%7.f%d", jd2jdN(beijingTime(t)), 2)
+			desc := fmt.Sprintf("气:%d", j)
+			combines[i] = append(combines[i], tag{key, desc, t})
 		}
 	}
+	for i := 0; i < 2; i++ {
+		sort.Slice(combines[i], func(m, n int) bool { return combines[i][m].key < combines[i][n].key })
+		for _, v := range combines[i] {
+			if strings.HasPrefix(v.desc, "朔") {
+				fmt.Println("----------------------------------------------")
+			}
+			fmt.Printf("%s %s %s\n", v.desc, v.key[0:len(v.key)-1], v.JDPlus)
+		}
+		fmt.Println()
+	}
+
 	for _, m := range ly.months {
-		fmt.Println("月首：")
-		fmt.Println(julian.JDToCalendar(m.d0))
+		fmt.Println("月首：", JDPlus{m.d0 - 0.5, true})
 		fmt.Println("月长：", m.dn)
 		fmt.Println("闰：", m.leap)
 		fmt.Println("月：", m.seq+1)
 		fmt.Println("年：", m.year)
-		fmt.Println("==============")
+		fmt.Println("---------------------------------------------------")
 	}
+	fmt.Println("=====================DEBUG END========================")
 }

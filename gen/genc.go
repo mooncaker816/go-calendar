@@ -160,7 +160,7 @@ func main() {
 			if delta == -1 {
 				counts1++
 				ra1.Add(uint32(jdN))
-				fmt.Printf("%7d,%s,%d\n", int(jdN)-1947877, calendar.DT2SolarTime(calendar.JDPlus{jdN, true}), int(delta))
+				fmt.Printf("%7d,%s,%d\n", int(jdN)-1947877, calendar.JDPlus{jdN, true}, int(delta))
 			}
 		}
 	}
@@ -178,7 +178,7 @@ func main() {
 			if delta == 1 {
 				counts2++
 				ra2.Add(uint32(jdN))
-				fmt.Printf("%7d,%s,%d\n", int(jdN)-1949825, calendar.DT2SolarTime(calendar.JDPlus{jdN, true}), int(delta))
+				fmt.Printf("%7d,%s,%d\n", int(jdN)-1949825, calendar.JDPlus{jdN, true}, int(delta))
 			}
 		}
 	}
@@ -197,7 +197,7 @@ func main() {
 			if delta == -1 {
 				countq1++
 				ra3.Add(uint32(jdN))
-				fmt.Printf("%7d,%s,%d\n", int(jdN)-2322344, calendar.DT2SolarTime(calendar.JDPlus{jdN, true}), int(delta))
+				fmt.Printf("%7d,%s,%d\n", int(jdN)-2322344, calendar.JDPlus{jdN, true}, int(delta))
 			}
 		}
 	}
@@ -215,7 +215,7 @@ func main() {
 			if delta == 1 {
 				countq2++
 				ra4.Add(uint32(jdN))
-				fmt.Printf("%7d,%s,%d\n", int(jdN)-2322468, calendar.DT2SolarTime(calendar.JDPlus{jdN, true}), int(delta))
+				fmt.Printf("%7d,%s,%d\n", int(jdN)-2322468, calendar.JDPlus{jdN, true}, int(delta))
 			}
 		}
 	}
