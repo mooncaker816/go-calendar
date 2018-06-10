@@ -194,10 +194,11 @@ func jd2year(jd float64) float64 {
 	year, m, d := julian.JDToCalendar(jd)
 	z, f := math.Modf(d)
 	yeardays := 365.
-	if julian.LeapYearGregorian(year) {
+	leap := LeapYear(year)
+	if leap {
 		yeardays++
 	}
-	return float64(year) + (float64(julian.DayOfYearGregorian(year, m, int(z)))+f)/yeardays
+	return float64(year) + (float64(julian.DayOfYear(year, m, int(z), leap))+f)/yeardays
 }
 
 func avgShuoRange(jde float64) bool {

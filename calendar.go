@@ -90,18 +90,35 @@ type GZ struct {
 	Z ichang.Dizhi
 }
 
+// CalendarToJD converts a Gregorian/Julian Calendar date to julian day num(12:00)
+func CalendarToJD(y, m int, d float64) float64 {
+	if y*372+m*31+int(math.Floor(d)) >= 588829 {
+		return julian.CalendarGregorianToJD(y, m, d)
+	}
+	return julian.CalendarJulianToJD(y, m, d)
+}
+
+// LeapYear checks if the calendar year is leap or not
+func LeapYear(y int) bool {
+	if y <= 1582 {
+		return julian.LeapYearJulian(y)
+	}
+	return julian.LeapYearGregorian(y)
+}
+
 // genDay generates the details for a specific JD
 func genDay(jd float64, ly *LunarYear) Day {
 	var day Day
 	jdN := jd2jdN(jd)
 	// 近似处理，精确到1毫秒，主要处理因截断导致的如59.99999秒在时辰交替点的判断出现的误差
+	// 只需要时间，不涉及日期，所以对儒略历日期，格里历日期都适用
 	tm := julian.JDToTime(jd).Round(time.Millisecond)
 	// 公历信息
 	var d float64
 	day.Jd = jdN
 	day.YN, day.MN, d = julian.JDToCalendar(jdN)
 	day.DN = int(d)
-	mDay0Jd := julian.CalendarGregorianToJD(day.YN, day.MN, 1)
+	mDay0Jd := CalendarToJD(day.YN, day.MN, 1)
 	mDay0W := julian.DayOfWeek(mDay0Jd)
 	day.Week = julian.DayOfWeek(jdN)
 	day.Weeki = int(math.Floor(float64(mDay0W+day.DN-1) / 7))
@@ -329,7 +346,7 @@ func DayCalendar(y, m int, d float64, AD bool, ly *LunarYear) (Day, error) {
 
 	// jd00 := jd2jd00(julian.CalendarGregorianToJD(y, m, float64(d)))
 	// jd := jd00 + float64(time.Now().Hour())/24
-	jd := julian.CalendarGregorianToJD(y, m, d)
+	jd := CalendarToJD(y, m, d)
 	ly = checkLY(ly, y, jd2jdN(jd))
 
 	day = genDay(jd, ly)
@@ -350,11 +367,13 @@ func MonthCalendar(y, m int, AD bool, ly *LunarYear) (Month, error) {
 	if m < 1 || m > 12 {
 		return month, errMonthNum
 	}
-	jdN0 := julian.CalendarGregorianToJD(y, m, 1.5)
+	fmt.Println(y, m)
+	jdN0 := CalendarToJD(y, m, 1.5)
 	month.Num = m   //公历月份
 	month.D0 = jdN0 //月首儒略日数
+	fmt.Println(jdN0)
 	cnt := monthDayCnt[m-1]
-	if m == 2 && julian.LeapYearGregorian(y) {
+	if m == 2 && LeapYear(y) {
 		cnt++
 	}
 	month.Dn = cnt                          //本月的天数
@@ -395,9 +414,9 @@ func YearCalendar(y int, AD bool) (Year, error) {
 		yN = -y + 1
 	}
 	year.Num = yN
-	year.Leap = julian.LeapYearGregorian(y)
+	year.Leap = LeapYear(y)
 	year.Months = make([]Month, 12)
-	ly := GenLunarYear(yN)
+	ly := GenLunarYear(yN, Debug())
 	for i := 0; i < 12; i++ {
 		m, err := MonthCalendar(y, i+1, AD, ly)
 		if err != nil {
@@ -416,10 +435,7 @@ func LunarToGregorian(y, m, d int, AD, leap bool) (yg, mg, dg int, err error) {
 		return 0, 0, 0, err
 	}
 	ly := GenLunarYear(y)
-	// if !AD {
-	// 	fmt.Println(y)
-	// 	ly.debug()
-	// }
+
 	for _, month := range ly.Months {
 		if month.seq+1 == m && month.leap == leap {
 			if d > month.dn {
@@ -441,7 +457,7 @@ func GregorianToLunar(y, m, d int, AD bool) (yl, ml, dl int, leap bool, err erro
 	if err != nil {
 		return 0, 0, 0, false, err
 	}
-	jdN := julian.CalendarGregorianToJD(y, m, float64(d)+0.5)
+	jdN := CalendarToJD(y, m, float64(d)+0.5)
 	ly := GenLunarYear(y)
 	prev := ly.months[0]
 	ok := false
@@ -486,7 +502,7 @@ func chkNum(y, m, d int, AD, lunar bool) (int, error) {
 		return y, errDateNum
 	}
 	max := monthDayCnt[m-1]
-	if m == 2 && julian.LeapYearGregorian(y) {
+	if m == 2 && LeapYear(y) {
 		max++
 	}
 	if d > max {

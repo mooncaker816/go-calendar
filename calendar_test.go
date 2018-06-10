@@ -3,34 +3,32 @@ package calendar
 import (
 	"fmt"
 	"testing"
-
-	"github.com/mooncaker816/learnmeeus/v3/julian"
 )
 
 func ExampleGenDay() {
 	ly := GenLunarYear(1987)
 	jd := make([]float64, 21)
-	jd[0] = julian.CalendarGregorianToJD(1986, 12, 30.0)                //冬月廿九
-	jd[1] = julian.CalendarGregorianToJD(1986, 12, 31+float64(2)/24)    //腊月初一
-	jd[2] = julian.CalendarGregorianToJD(1987, 1, 1+float64(4)/24)      //腊月初二
-	jd[3] = julian.CalendarGregorianToJD(1987, 1, 5+float64(6)/24)      //腊月初六，大雪节气月末
-	jd[4] = julian.CalendarGregorianToJD(1987, 1, 6+float64(8)/24)      //腊月初七，小寒，节气月初
-	jd[5] = julian.CalendarGregorianToJD(1987, 1, 28+float64(10)/24)    //腊月廿九
-	jd[6] = julian.CalendarGregorianToJD(1987, 1, 29+float64(12)/24)    //正月初一
-	jd[7] = julian.CalendarGregorianToJD(1987, 2, 3+float64(14)/24)     //正月初六，小寒，节气月末
-	jd[8] = julian.CalendarGregorianToJD(1987, 2, 4+float64(16)/24)     //正月初七，立春，节气月初
-	jd[9] = julian.CalendarGregorianToJD(1987, 6, 5+float64(18)/24)     //五月初十，节气月末
-	jd[10] = julian.CalendarGregorianToJD(1987, 6, 6+float64(20)/24)    //五月十一，芒种，节气月初
-	jd[11] = julian.CalendarGregorianToJD(1987, 6, 25+float64(22)/24)   //五月三十
-	jd[12] = julian.CalendarGregorianToJD(1987, 6, 26+float64(22.9)/24) //六月初一
-	jd[13] = julian.CalendarGregorianToJD(1987, 7, 6+float64(23)/24)    //六月十一，芒种，节气月末
-	jd[14] = julian.CalendarGregorianToJD(1987, 7, 7+float64(23.1)/24)  //六月十二，小暑，节气月初
-	jd[15] = julian.CalendarGregorianToJD(1987, 7, 25+float64(3)/24)    //六月三十
-	jd[16] = julian.CalendarGregorianToJD(1987, 7, 26+float64(5)/24)    //闰六月初一
-	jd[17] = julian.CalendarGregorianToJD(1987, 8, 7+float64(7)/24)     //闰六月十三，小暑，节气月末
-	jd[18] = julian.CalendarGregorianToJD(1987, 8, 8+float64(9)/24)     //闰六月十四，立秋，节气月初
-	jd[19] = julian.CalendarGregorianToJD(1987, 8, 23+float64(11)/24)   //闰六月廿九
-	jd[20] = julian.CalendarGregorianToJD(1987, 8, 24+float64(13)/24)   //七月初一，处暑，中气
+	jd[0] = CalendarToJD(1986, 12, 30.0)                //冬月廿九
+	jd[1] = CalendarToJD(1986, 12, 31+float64(2)/24)    //腊月初一
+	jd[2] = CalendarToJD(1987, 1, 1+float64(4)/24)      //腊月初二
+	jd[3] = CalendarToJD(1987, 1, 5+float64(6)/24)      //腊月初六，大雪节气月末
+	jd[4] = CalendarToJD(1987, 1, 6+float64(8)/24)      //腊月初七，小寒，节气月初
+	jd[5] = CalendarToJD(1987, 1, 28+float64(10)/24)    //腊月廿九
+	jd[6] = CalendarToJD(1987, 1, 29+float64(12)/24)    //正月初一
+	jd[7] = CalendarToJD(1987, 2, 3+float64(14)/24)     //正月初六，小寒，节气月末
+	jd[8] = CalendarToJD(1987, 2, 4+float64(16)/24)     //正月初七，立春，节气月初
+	jd[9] = CalendarToJD(1987, 6, 5+float64(18)/24)     //五月初十，节气月末
+	jd[10] = CalendarToJD(1987, 6, 6+float64(20)/24)    //五月十一，芒种，节气月初
+	jd[11] = CalendarToJD(1987, 6, 25+float64(22)/24)   //五月三十
+	jd[12] = CalendarToJD(1987, 6, 26+float64(22.9)/24) //六月初一
+	jd[13] = CalendarToJD(1987, 7, 6+float64(23)/24)    //六月十一，芒种，节气月末
+	jd[14] = CalendarToJD(1987, 7, 7+float64(23.1)/24)  //六月十二，小暑，节气月初
+	jd[15] = CalendarToJD(1987, 7, 25+float64(3)/24)    //六月三十
+	jd[16] = CalendarToJD(1987, 7, 26+float64(5)/24)    //闰六月初一
+	jd[17] = CalendarToJD(1987, 8, 7+float64(7)/24)     //闰六月十三，小暑，节气月末
+	jd[18] = CalendarToJD(1987, 8, 8+float64(9)/24)     //闰六月十四，立秋，节气月初
+	jd[19] = CalendarToJD(1987, 8, 23+float64(11)/24)   //闰六月廿九
+	jd[20] = CalendarToJD(1987, 8, 24+float64(13)/24)   //七月初一，处暑，中气
 	for i, v := range jd {
 		fmt.Println(i)
 		fmt.Println(genDay(v, ly))
@@ -249,7 +247,8 @@ func ExampleMonthCalendar() {
 
 func ExampleYearCalendar() {
 
-	year, err := YearCalendar(2017, true)
+	year, err := YearCalendar(1, false)
+	// year, err := YearCalendar(2017, true)
 	if err != nil {
 		fmt.Printf("YearCalendar failed:%v\n", err)
 		return
