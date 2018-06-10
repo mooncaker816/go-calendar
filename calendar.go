@@ -367,11 +367,9 @@ func MonthCalendar(y, m int, AD bool, ly *LunarYear) (Month, error) {
 	if m < 1 || m > 12 {
 		return month, errMonthNum
 	}
-	fmt.Println(y, m)
 	jdN0 := CalendarToJD(y, m, 1.5)
 	month.Num = m   //公历月份
 	month.D0 = jdN0 //月首儒略日数
-	fmt.Println(jdN0)
 	cnt := monthDayCnt[m-1]
 	if m == 2 && LeapYear(y) {
 		cnt++
@@ -416,7 +414,7 @@ func YearCalendar(y int, AD bool) (Year, error) {
 	year.Num = yN
 	year.Leap = LeapYear(y)
 	year.Months = make([]Month, 12)
-	ly := GenLunarYear(yN, Debug())
+	ly := GenLunarYear(yN)
 	for i := 0; i < 12; i++ {
 		m, err := MonthCalendar(y, i+1, AD, ly)
 		if err != nil {

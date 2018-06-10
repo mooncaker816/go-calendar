@@ -247,8 +247,8 @@ func ExampleMonthCalendar() {
 
 func ExampleYearCalendar() {
 
-	year, err := YearCalendar(1, false)
-	// year, err := YearCalendar(2017, true)
+	// year, err := YearCalendar(1, false)
+	year, err := YearCalendar(2017, true)
 	if err != nil {
 		fmt.Printf("YearCalendar failed:%v\n", err)
 		return

@@ -160,7 +160,7 @@ func main() {
 			if delta == -1 {
 				counts1++
 				ra1.Add(uint32(jdN))
-				fmt.Printf("%7d,%s,%d\n", int(jdN)-1947877, calendar.JDPlus{jdN, true}, int(delta))
+				fmt.Printf("%7d,%s,%d\n", int(jdN), calendar.JDPlus{jdN, true}, int(delta))
 			}
 		}
 	}
@@ -178,7 +178,7 @@ func main() {
 			if delta == 1 {
 				counts2++
 				ra2.Add(uint32(jdN))
-				fmt.Printf("%7d,%s,%d\n", int(jdN)-1949825, calendar.JDPlus{jdN, true}, int(delta))
+				fmt.Printf("%7d,%s,%d\n", int(jdN), calendar.JDPlus{jdN, true}, int(delta))
 			}
 		}
 	}
@@ -197,7 +197,7 @@ func main() {
 			if delta == -1 {
 				countq1++
 				ra3.Add(uint32(jdN))
-				fmt.Printf("%7d,%s,%d\n", int(jdN)-2322344, calendar.JDPlus{jdN, true}, int(delta))
+				fmt.Printf("%7d,%s,%d\n", int(jdN), calendar.JDPlus{jdN, true}, int(delta))
 			}
 		}
 	}
@@ -215,20 +215,19 @@ func main() {
 			if delta == 1 {
 				countq2++
 				ra4.Add(uint32(jdN))
-				fmt.Printf("%7d,%s,%d\n", int(jdN)-2322468, calendar.JDPlus{jdN, true}, int(delta))
+				fmt.Printf("%7d,%s,%d\n", int(jdN), calendar.JDPlus{jdN, true}, int(delta))
 			}
 		}
 	}
-	fmt.Println(ra1.ToBase64())
-	fmt.Println(ra2.ToBase64())
-	fmt.Println(ra3.ToBase64())
-	fmt.Println(ra4.ToArray())
-	str, _ := ra4.ToBase64()
-	fmt.Println(str)
-	b, _ := ra4.ToBytes()
-	fmt.Println(b)
-	bin, _ := ra4.MarshalBinary()
-	fmt.Println(bin)
+	str1, _ := ra1.ToBase64()
+	fmt.Println(str1)
+	str2, _ := ra2.ToBase64()
+	fmt.Println(str2)
+	str3, _ := ra3.ToBase64()
+	fmt.Println(str3)
+	str4, _ := ra4.ToBase64()
+	fmt.Println(str4)
+
 	fmt.Println(len(shuos), counts, counts1, counts2)
 	fmt.Println(len(qis), countq, countq1, countq2)
 }
@@ -383,10 +382,11 @@ func jd2year(jd float64) float64 {
 	year, m, d := julian.JDToCalendar(jd)
 	z, f := math.Modf(d)
 	yeardays := 365.
-	if julian.LeapYearGregorian(year) {
+	leap := calendar.LeapYear(year)
+	if leap {
 		yeardays++
 	}
-	return float64(year) + (float64(julian.DayOfYearGregorian(year, m, int(z)))+f)/yeardays
+	return float64(year) + (float64(julian.DayOfYear(year, m, int(z), leap))+f)/yeardays
 }
 
 func beijingTime(jde float64) float64 {
