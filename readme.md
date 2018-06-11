@@ -31,7 +31,34 @@
 2. 若查询的是武则天改历期间的农历正月，由于有一月的并存，请以11作为正月的值输入，其他不变
 3. 若查询的是秦历后九月，周历闰十三月当作闰九月和闰十二月处理，对应的月份值分别为9，12
 
-## 4. 年历`YearCalendar`
+## 4. 阳历转农历`SolarToLunar`
+
+1. 若输入的阳历日期在1582年10月4日之前（包含），则以儒略历日期计算农历，反之以格里历计算
+2. 函数返回农历年，月，日，以及闰月标志
+
+## 5. 日历`DayCalendar`
+
+```go
+	day, err := DayCalendar(2018, 6, 6, true, nil)
+	if err != nil {
+		fmt.Printf("DayCalendar failed:%v\n", err)
+		return
+	}
+	fmt.Println(day)
+```
+
+```bash
+公元2018年6月6日
+星期三 双子座
+JD 2458276
+农历【狗】四月（大）廿三
+戊戌年 丁巳月 己巳日
+四柱：戊戌 戊午 己巳 甲子
+```
+
+## 6. 月历`MonthCalendar`
+
+## 7. 年历`YearCalendar`
 
 ```bash
 🗓️                 2017年（平）
