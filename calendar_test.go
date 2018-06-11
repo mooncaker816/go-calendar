@@ -282,18 +282,18 @@ func ExampleMonthCalendar() {
 		return
 	}
 	fmt.Println(month)
-	// month, err = MonthCalendar(707, 11, false, nil)
-	// if err != nil {
-	// 	fmt.Printf("MonthCalendar failed:%v\n", err)
-	// 	return
-	// }
-	// fmt.Println(month)
-	// month, err = MonthCalendar(707, 12, false, nil)
-	// if err != nil {
-	// 	fmt.Printf("MonthCalendar failed:%v\n", err)
-	// 	return
-	// }
-	// fmt.Println(month)
+	month, err = MonthCalendar(707, 11, false, nil)
+	if err != nil {
+		fmt.Printf("MonthCalendar failed:%v\n", err)
+		return
+	}
+	fmt.Println(month)
+	month, err = MonthCalendar(707, 12, false, nil)
+	if err != nil {
+		fmt.Printf("MonthCalendar failed:%v\n", err)
+		return
+	}
+	fmt.Println(month)
 	// Output:
 	//📅                    6月
 	//     日    一    二    三    四    五    六
@@ -357,7 +357,7 @@ func ExampleMonthCalendar() {
 	//
 	//立春：2日 12ʰ0ᵐ0ˢ
 	//雨水：17日 12ʰ0ᵐ0ˢ
-	//📅                     11月
+	//📅                    11月
 	//     日    一    二    三    四    五    六
 	//☀️   ㏠    ㏡    ㏢    ㏣    ㏤    ㏥    ㏦
 	//🌛  十一  十二  十三  十四  十五  十六  十七
