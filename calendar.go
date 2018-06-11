@@ -163,7 +163,7 @@ func genDay(jd float64, ly *LunarYear) Day {
 	day.LMleap = prev.leap
 	day.LYN = prev.year
 	switch {
-	//武则天子正寅一，之前建立 LunarYear 的时候月序号采用的是子寅，这样只要修改11为1就好了
+	//武则天子正寅一，之前建立 LunarYear 的时候月序号采用的是寅正，这样只要修改11为1就好了
 	case ly.YueJian == ZZYY:
 		switch day.LMN {
 		case 11:
@@ -171,10 +171,10 @@ func genDay(jd float64, ly *LunarYear) Day {
 		case 1:
 			day.special = WuZeTian1
 		}
-		// 19年7闰，年末闰十三
+	// 19年7闰，年末闰十三
 	case ly.ZhiRun == R7in19st1 && day.LMleap:
 		day.special = Leap13
-		// 19年7闰，年末后九
+	// 19年7闰，年末后九
 	case ly.ZhiRun == R7in19st10 && day.LMleap:
 		day.special = After9
 	}

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func ExampleGenDay() {
+func ExamplegenDay() {
 	ly := GenLunarYear(1987)
 	jd := make([]float64, 21)
 	jd[0], _ = CalendarToJD(true, 1986, 12, 30.0)                //冬月廿九
@@ -206,66 +206,30 @@ func ExampleGenDay() {
 }
 
 func ExampleDayCalendar() {
-	day, err := DayCalendar(2018, 6, 6, true, nil)
-	if err != nil {
-		fmt.Printf("DayCalendar failed:%v\n", err)
-		return
+	tt := []struct {
+		y, m int
+		d    float64
+		AD   bool
+	}{
+		{2018, 6, 6, true},
+		{1582, 10, 6, true},
+		{698, 12, 7, true},
+		{698, 12, 8, true},
+		{105, 11, 25, false},
+		{105, 11, 26, false},
+		{102, 7, 26, false},
+		{102, 7, 27, false},
+		{506, 11, 18, false},
+		{506, 11, 19, false},
 	}
-	fmt.Println(day)
-	day, err = DayCalendar(1582, 10, 6, true, nil)
-	if err != nil {
-		fmt.Printf("DayCalendar failed:%v\n", err)
-		return
+	for _, tc := range tt {
+		day, err := DayCalendar(tc.y, tc.m, tc.d, tc.AD, nil)
+		if err != nil {
+			fmt.Printf("DayCalendar failed:%v\n", err)
+			return
+		}
+		fmt.Println(day)
 	}
-	fmt.Println(day)
-	day, err = DayCalendar(698, 12, 7, true, nil)
-	if err != nil {
-		fmt.Printf("DayCalendar failed:%v\n", err)
-		return
-	}
-	fmt.Println(day)
-	day, err = DayCalendar(698, 12, 8, true, nil)
-	if err != nil {
-		fmt.Printf("DayCalendar failed:%v\n", err)
-		return
-	}
-	fmt.Println(day)
-	day, err = DayCalendar(105, 11, 25, false, nil)
-	if err != nil {
-		fmt.Printf("DayCalendar failed:%v\n", err)
-		return
-	}
-	fmt.Println(day)
-	day, err = DayCalendar(105, 11, 26, false, nil)
-	if err != nil {
-		fmt.Printf("DayCalendar failed:%v\n", err)
-		return
-	}
-	fmt.Println(day)
-	day, err = DayCalendar(102, 7, 26, false, nil)
-	if err != nil {
-		fmt.Printf("DayCalendar failed:%v\n", err)
-		return
-	}
-	fmt.Println(day)
-	day, err = DayCalendar(102, 7, 27, false, nil)
-	if err != nil {
-		fmt.Printf("DayCalendar failed:%v\n", err)
-		return
-	}
-	fmt.Println(day)
-	day, err = DayCalendar(506, 11, 18, false, nil)
-	if err != nil {
-		fmt.Printf("DayCalendar failed:%v\n", err)
-		return
-	}
-	fmt.Println(day)
-	day, err = DayCalendar(506, 11, 19, false, nil)
-	if err != nil {
-		fmt.Printf("DayCalendar failed:%v\n", err)
-		return
-	}
-	fmt.Println(day)
 	// Output:
 	// 公元2018年6月6日
 	// 星期三 双子座
@@ -330,42 +294,25 @@ func ExampleDayCalendar() {
 }
 
 func ExampleMonthCalendar() {
-	month, err := MonthCalendar(1998, 6, true, nil)
-	if err != nil {
-		fmt.Printf("MonthCalendar failed:%v\n", err)
-		return
+	tt := []struct {
+		y, m int
+		AD   bool
+	}{
+		{1998, 6, true},
+		{689, 12, true},
+		{690, 1, true},
+		{690, 2, true},
+		{707, 11, false},
+		{707, 12, false},
 	}
-	fmt.Println(month)
-	month, err = MonthCalendar(689, 12, true, nil)
-	if err != nil {
-		fmt.Printf("MonthCalendar failed:%v\n", err)
-		return
+	for _, tc := range tt {
+		month, err := MonthCalendar(tc.y, tc.m, tc.AD, nil)
+		if err != nil {
+			fmt.Printf("MonthCalendar failed:%v\n", err)
+			return
+		}
+		fmt.Println(month)
 	}
-	fmt.Println(month)
-	month, err = MonthCalendar(690, 1, true, nil)
-	if err != nil {
-		fmt.Printf("MonthCalendar failed:%v\n", err)
-		return
-	}
-	fmt.Println(month)
-	month, err = MonthCalendar(690, 2, true, nil)
-	if err != nil {
-		fmt.Printf("MonthCalendar failed:%v\n", err)
-		return
-	}
-	fmt.Println(month)
-	month, err = MonthCalendar(707, 11, false, nil)
-	if err != nil {
-		fmt.Printf("MonthCalendar failed:%v\n", err)
-		return
-	}
-	fmt.Println(month)
-	month, err = MonthCalendar(707, 12, false, nil)
-	if err != nil {
-		fmt.Printf("MonthCalendar failed:%v\n", err)
-		return
-	}
-	fmt.Println(month)
 	// Output:
 	//📅                    6月
 	//     日    一    二    三    四    五    六
