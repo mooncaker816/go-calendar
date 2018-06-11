@@ -564,6 +564,9 @@ func SolarToLunar(y, m, d int, AD bool) (yl, ml, dl int, leap bool, err error) {
 		ml = prev.seq + 1
 		dl = int(jdN-prev.d0) + 1
 		leap = prev.leap
+		if leap && ly.ZhiRun == R7in19st1 { //闰13
+			ml = 13
+		}
 		return yl, ml, dl, leap, nil
 	}
 	return 0, 0, 0, false, errConvGToL

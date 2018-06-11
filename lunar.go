@@ -313,6 +313,7 @@ func (ly *LunarYear) genLunarMonth() {
 	leapI := [2]int{-1, -1}
 	switch ly.ZhiRun {
 	case R7in19st10, R7in19st1:
+
 		if chkR7in19(ly.GYear) {
 			if ly.YueJian == ZZ {
 				leapI[0] = 12 //闰十三月
@@ -584,6 +585,7 @@ debug:
 	}
 	fmt.Println("=====================Other Information==================")
 	fmt.Printf("ΔT≈%fs,寿星ΔT≈%fs\n", deltat(ly.dzs[0].JD)*86400, deltat2(ly.dzs[0].JD)*86400)
+	fmt.Println("Period：", ly.Period)
 	fmt.Println("两个自然年是否有闰：", ly.leap)
 
 	for i, dz := range ly.dzs {

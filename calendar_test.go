@@ -607,7 +607,7 @@ func ExampleYearCalendar() {
 	//冬至：22日 27ᵐ56ˢ
 }
 
-var l2gtc = []struct {
+var l2stc = []struct {
 	y, m, d    int
 	AD, leap   bool
 	yg, mg, dg int
@@ -635,11 +635,44 @@ var l2gtc = []struct {
 	{1582, 9, 19, true, false, 1582, 10, 15, nil},              //公元1582年九月十九 -> 1582-10-15
 }
 
-func TestLunarToGregorian(t *testing.T) {
-	for _, tc := range l2gtc {
+func TestLunarToSolar(t *testing.T) {
+	for _, tc := range l2stc {
 		yg, mg, dg, err := LunarToSolar(tc.y, tc.m, tc.d, tc.AD, tc.leap)
 		if tc.err != err || tc.yg != yg || tc.mg != mg || tc.dg != dg {
 			t.Errorf("got err: %v date: %d-%d-%d, expected err: %v date: %d-%d-%d\n", err, yg, mg, dg, tc.err, tc.yg, tc.mg, tc.dg)
+		}
+	}
+}
+
+var s2ltc = []struct {
+	y, m, d    int
+	AD         bool
+	yl, ml, dl int
+	leap       bool
+	err        error
+}{
+	{1978, 2, 6, true, 1977, 12, 29, false, nil},
+	{1978, 4, 5, true, 1978, 2, 28, false, nil},
+	{1978, 4, 5, true, 1978, 2, 28, false, nil},
+	{2033, 12, 22, true, 2033, 11, 1, true, nil},
+	{2014, 2, 29, true, 0, 0, 0, false, errDateNumExceed},
+	{1582, 10, 4, true, 1582, 9, 18, false, nil},
+	{237, 12, 23, true, 237, 12, 19, false, nil},
+	{238, 1, 2, true, 237, 12, 29, false, nil},
+	{241, 7, 31, true, 241, 6, 6, true, nil},
+	{208, 10, 25, false, -207, 9, 29, false, nil},
+	{208, 10, 26, false, -207, 9, 1, true, nil},
+	{208, 11, 24, false, -207, 9, 30, true, nil},
+	{208, 11, 25, false, -207, 10, 1, false, nil},
+	{639, 11, 18, false, -638, 12, 29, false, nil},
+	{639, 11, 19, false, -638, 13, 1, true, nil},
+}
+
+func TestSolarToLunar(t *testing.T) {
+	for _, tc := range s2ltc {
+		yl, ml, dl, leap, err := SolarToLunar(tc.y, tc.m, tc.d, tc.AD)
+		if tc.err != err || tc.yl != yl || tc.ml != ml || tc.dl != dl || tc.leap != leap {
+			t.Errorf("got err: %v date: %d-%d-%d leap: %v, expected err: %v date: %d-%d-%d leap: %v\n", err, yl, ml, dl, leap, tc.err, tc.yl, tc.ml, tc.dl, tc.leap)
 		}
 	}
 }

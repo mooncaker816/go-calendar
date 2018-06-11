@@ -1,6 +1,7 @@
 package calendar
 
 import (
+	"fmt"
 	"sort"
 )
 
@@ -51,8 +52,14 @@ func (ly *LunarYear) getPeriod(year int) {
 }
 
 func chkR7in19(y int) bool {
+	// if y > -104 || y < -364 {
+	// 	return false
+	// }
 	// 公元前170年为闰年，为第一式闰章的终止年
 	v := mod((y - (-169)), 19) //闰章索引
+	if v == 0 {
+		v = 19
+	}
 	if y+1 > -169 {
 		i := sort.SearchInts(r2, v)
 		if i < len(r2) && r2[i] == v {
@@ -69,3 +76,26 @@ func chkR7in19(y int) bool {
 
 var r1 = []int{3, 6, 9, 11, 14, 17, 19} //闰章第一式
 var r2 = []int{3, 6, 8, 11, 14, 17, 19} //闰章第二式
+
+func (p Period) String() string {
+	var yjStr, leapStr string
+	switch p.YueJian {
+	case ZZ:
+		yjStr = "子正"
+	case CZ:
+		yjStr = "丑正"
+	case YZ:
+		yjStr = "寅正"
+	case ZZYY:
+		yjStr = "子正寅一"
+	}
+	switch p.ZhiRun {
+	case R7in19st1:
+		leapStr = "19年7闰，正月为首，末尾置闰"
+	case R7in19st10:
+		leapStr = "19年7闰，十月为首，末尾置闰"
+	case RNoZQ:
+		leapStr = "无中气置闰"
+	}
+	return fmt.Sprintf("%d %s%s", p.GYear, yjStr, leapStr)
+}
