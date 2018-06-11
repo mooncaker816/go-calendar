@@ -34,7 +34,7 @@ func (ly *LunarYear) getPeriod(year int) {
 		// p.GYear++
 		p.YueJian = ZZ
 		p.ZhiRun = R7in19st1
-	case p.GYear >= -221 && p.GYear < -104:
+	case p.GYear >= -221 && p.GYear <= -104:
 		p.ZhiRun = R7in19st10
 	case p.GYear >= 8 && p.GYear < 23:
 		p.YueJian = CZ

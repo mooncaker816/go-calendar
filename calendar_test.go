@@ -8,27 +8,27 @@ import (
 func ExampleGenDay() {
 	ly := GenLunarYear(1987)
 	jd := make([]float64, 21)
-	jd[0] = CalendarToJD(1986, 12, 30.0)                //冬月廿九
-	jd[1] = CalendarToJD(1986, 12, 31+float64(2)/24)    //腊月初一
-	jd[2] = CalendarToJD(1987, 1, 1+float64(4)/24)      //腊月初二
-	jd[3] = CalendarToJD(1987, 1, 5+float64(6)/24)      //腊月初六，大雪节气月末
-	jd[4] = CalendarToJD(1987, 1, 6+float64(8)/24)      //腊月初七，小寒，节气月初
-	jd[5] = CalendarToJD(1987, 1, 28+float64(10)/24)    //腊月廿九
-	jd[6] = CalendarToJD(1987, 1, 29+float64(12)/24)    //正月初一
-	jd[7] = CalendarToJD(1987, 2, 3+float64(14)/24)     //正月初六，小寒，节气月末
-	jd[8] = CalendarToJD(1987, 2, 4+float64(16)/24)     //正月初七，立春，节气月初
-	jd[9] = CalendarToJD(1987, 6, 5+float64(18)/24)     //五月初十，节气月末
-	jd[10] = CalendarToJD(1987, 6, 6+float64(20)/24)    //五月十一，芒种，节气月初
-	jd[11] = CalendarToJD(1987, 6, 25+float64(22)/24)   //五月三十
-	jd[12] = CalendarToJD(1987, 6, 26+float64(22.9)/24) //六月初一
-	jd[13] = CalendarToJD(1987, 7, 6+float64(23)/24)    //六月十一，芒种，节气月末
-	jd[14] = CalendarToJD(1987, 7, 7+float64(23.1)/24)  //六月十二，小暑，节气月初
-	jd[15] = CalendarToJD(1987, 7, 25+float64(3)/24)    //六月三十
-	jd[16] = CalendarToJD(1987, 7, 26+float64(5)/24)    //闰六月初一
-	jd[17] = CalendarToJD(1987, 8, 7+float64(7)/24)     //闰六月十三，小暑，节气月末
-	jd[18] = CalendarToJD(1987, 8, 8+float64(9)/24)     //闰六月十四，立秋，节气月初
-	jd[19] = CalendarToJD(1987, 8, 23+float64(11)/24)   //闰六月廿九
-	jd[20] = CalendarToJD(1987, 8, 24+float64(13)/24)   //七月初一，处暑，中气
+	jd[0], _ = CalendarToJD(true, 1986, 12, 30.0)                //冬月廿九
+	jd[1], _ = CalendarToJD(true, 1986, 12, 31+float64(2)/24)    //腊月初一
+	jd[2], _ = CalendarToJD(true, 1987, 1, 1+float64(4)/24)      //腊月初二
+	jd[3], _ = CalendarToJD(true, 1987, 1, 5+float64(6)/24)      //腊月初六，大雪节气月末
+	jd[4], _ = CalendarToJD(true, 1987, 1, 6+float64(8)/24)      //腊月初七，小寒，节气月初
+	jd[5], _ = CalendarToJD(true, 1987, 1, 28+float64(10)/24)    //腊月廿九
+	jd[6], _ = CalendarToJD(true, 1987, 1, 29+float64(12)/24)    //正月初一
+	jd[7], _ = CalendarToJD(true, 1987, 2, 3+float64(14)/24)     //正月初六，小寒，节气月末
+	jd[8], _ = CalendarToJD(true, 1987, 2, 4+float64(16)/24)     //正月初七，立春，节气月初
+	jd[9], _ = CalendarToJD(true, 1987, 6, 5+float64(18)/24)     //五月初十，节气月末
+	jd[10], _ = CalendarToJD(true, 1987, 6, 6+float64(20)/24)    //五月十一，芒种，节气月初
+	jd[11], _ = CalendarToJD(true, 1987, 6, 25+float64(22)/24)   //五月三十
+	jd[12], _ = CalendarToJD(true, 1987, 6, 26+float64(22.9)/24) //六月初一
+	jd[13], _ = CalendarToJD(true, 1987, 7, 6+float64(23)/24)    //六月十一，芒种，节气月末
+	jd[14], _ = CalendarToJD(true, 1987, 7, 7+float64(23.1)/24)  //六月十二，小暑，节气月初
+	jd[15], _ = CalendarToJD(true, 1987, 7, 25+float64(3)/24)    //六月三十
+	jd[16], _ = CalendarToJD(true, 1987, 7, 26+float64(5)/24)    //闰六月初一
+	jd[17], _ = CalendarToJD(true, 1987, 8, 7+float64(7)/24)     //闰六月十三，小暑，节气月末
+	jd[18], _ = CalendarToJD(true, 1987, 8, 8+float64(9)/24)     //闰六月十四，立秋，节气月初
+	jd[19], _ = CalendarToJD(true, 1987, 8, 23+float64(11)/24)   //闰六月廿九
+	jd[20], _ = CalendarToJD(true, 1987, 8, 24+float64(13)/24)   //七月初一，处暑，中气
 	for i, v := range jd {
 		fmt.Println(i)
 		fmt.Println(genDay(v, ly))
@@ -230,6 +230,42 @@ func ExampleDayCalendar() {
 		return
 	}
 	fmt.Println(day)
+	day, err = DayCalendar(105, 11, 25, false, nil)
+	if err != nil {
+		fmt.Printf("DayCalendar failed:%v\n", err)
+		return
+	}
+	fmt.Println(day)
+	day, err = DayCalendar(105, 11, 26, false, nil)
+	if err != nil {
+		fmt.Printf("DayCalendar failed:%v\n", err)
+		return
+	}
+	fmt.Println(day)
+	day, err = DayCalendar(102, 7, 26, false, nil)
+	if err != nil {
+		fmt.Printf("DayCalendar failed:%v\n", err)
+		return
+	}
+	fmt.Println(day)
+	day, err = DayCalendar(102, 7, 27, false, nil)
+	if err != nil {
+		fmt.Printf("DayCalendar failed:%v\n", err)
+		return
+	}
+	fmt.Println(day)
+	day, err = DayCalendar(506, 11, 18, false, nil)
+	if err != nil {
+		fmt.Printf("DayCalendar failed:%v\n", err)
+		return
+	}
+	fmt.Println(day)
+	day, err = DayCalendar(506, 11, 19, false, nil)
+	if err != nil {
+		fmt.Printf("DayCalendar failed:%v\n", err)
+		return
+	}
+	fmt.Println(day)
 	// Output:
 	// 公元2018年6月6日
 	// 星期三 双子座
@@ -255,6 +291,42 @@ func ExampleDayCalendar() {
 	// 农历【猪】正月（大）初一
 	// 己亥年 甲子月 丁巳日
 	// 四柱：戊戌 甲子 丁巳 庚子
+	// 公元前105年11月25日
+	// 星期日 射手座
+	// JD 1683401
+	// 农历【鼠】后九月（大）三十
+	// 丙子年 戊戌月 甲午日
+	// 四柱：丙子 己亥 甲午 甲子
+	// 公元前105年11月26日
+	// 星期一 射手座
+	// JD 1683402
+	// 农历【鼠】十月（小）初一
+	// 丙子年 己亥月 乙未日
+	// 四柱：丙子 己亥 乙未 丙子
+	// 公元前102年7月26日
+	// 星期日 狮子座
+	// JD 1684374
+	// 农历【兔】六月（小）廿九
+	// 己卯年 辛未月 丁未日
+	// 四柱：己卯 辛未 丁未 庚子
+	// 公元前102年7月27日
+	// 星期一 狮子座
+	// JD 1684375
+	// 农历【兔】闰六月（大）初一
+	// 己卯年 辛未月 戊申日
+	// 四柱：己卯 辛未 戊申 壬子
+	// 公元前506年11月18日
+	// 星期二 天蝎座
+	// JD 1536928
+	// 农历【羊】腊月（大）三十
+	// 乙未年 丁亥月 辛巳日
+	// 四柱：乙未 丁亥 辛巳 戊子
+	// 公元前506年11月19日
+	// 星期三 天蝎座
+	// JD 1536929
+	// 农历【羊】闰十三（大）初一
+	// 乙未年 丁亥月 壬午日
+	// 四柱：乙未 丁亥 壬午 庚子
 }
 
 func ExampleMonthCalendar() {

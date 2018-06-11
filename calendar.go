@@ -101,7 +101,17 @@ const (
 )
 
 // CalendarToJD converts a Gregorian/Julian Calendar date to julian day num(12:00)
-func CalendarToJD(y, m int, d float64) float64 {
+func CalendarToJD(AD bool, y, m int, d float64) (float64, error) {
+	if y <= 0 {
+		return 0, errYearNum
+	}
+	if !AD {
+		y = -y + 1
+	}
+	return calendarToJD(y, m, d), nil
+}
+
+func calendarToJD(y, m int, d float64) float64 {
 	if y*372+m*31+int(math.Floor(d)) >= 588829 {
 		return julian.CalendarGregorianToJD(y, m, d)
 	}
@@ -132,7 +142,7 @@ func genDay(jd float64, ly *LunarYear) Day {
 	day.Jd = jdN
 	day.YN, day.MN, d = julian.JDToCalendar(jdN)
 	day.DN = int(d)
-	mDay0Jd := CalendarToJD(day.YN, day.MN, 1)
+	mDay0Jd := calendarToJD(day.YN, day.MN, 1)
 	mDay0W := julian.DayOfWeek(mDay0Jd)
 	day.Week = julian.DayOfWeek(jdN)
 	day.Weeki = int(math.Floor(float64(mDay0W+day.DN-1) / 7))
@@ -162,10 +172,10 @@ func genDay(jd float64, ly *LunarYear) Day {
 			day.special = WuZeTian1
 		}
 		// 19年7闰，年末闰十三
-	case ly.ZhiRun == R7in19st1:
+	case ly.ZhiRun == R7in19st1 && day.LMleap:
 		day.special = Leap13
 		// 19年7闰，年末后九
-	case ly.ZhiRun == R7in19st10:
+	case ly.ZhiRun == R7in19st10 && day.LMleap:
 		day.special = After9
 	}
 
@@ -424,7 +434,7 @@ func DayCalendar(y, m int, d float64, AD bool, ly *LunarYear) (Day, error) {
 
 	// jd00 := jd2jd00(julian.CalendarGregorianToJD(y, m, float64(d)))
 	// jd := jd00 + float64(time.Now().Hour())/24
-	jd := CalendarToJD(y, m, d)
+	jd := calendarToJD(y, m, d)
 	ly = checkLY(ly, y, jd2jdN(jd))
 
 	day = genDay(jd, ly)
@@ -445,7 +455,7 @@ func MonthCalendar(y, m int, AD bool, ly *LunarYear) (Month, error) {
 	if m < 1 || m > 12 {
 		return month, errMonthNum
 	}
-	jdN0 := CalendarToJD(y, m, 1.5)
+	jdN0 := calendarToJD(y, m, 1.5)
 	month.Num = m   //公历月份
 	month.D0 = jdN0 //月首儒略日数
 	cnt := monthDayCnt[m-1]
@@ -538,7 +548,7 @@ func SolarToLunar(y, m, d int, AD bool) (yl, ml, dl int, leap bool, err error) {
 	if err != nil {
 		return 0, 0, 0, false, err
 	}
-	jdN := CalendarToJD(y, m, float64(d)+0.5)
+	jdN := calendarToJD(y, m, float64(d)+0.5)
 	ly := GenLunarYear(y)
 	prev := ly.months[0]
 	ok := false

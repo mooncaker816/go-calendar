@@ -316,7 +316,7 @@ func (ly *LunarYear) genLunarMonth() {
 		if chkR7in19(ly.GYear) {
 			if ly.YueJian == ZZ {
 				leapI[0] = 12 //闰十三月
-				ly.LeapN = 11
+				ly.LeapN = 12
 			}
 			if ly.YueJian == YZ {
 				leapI[0] = 11 //后九月
@@ -353,6 +353,7 @@ func (ly *LunarYear) genLunarMonth() {
 			}
 		}
 	}
+	// fmt.Println("闰月在朔中的索引", ly.GYear, leapI)
 
 	// 定农历年首（春节）
 	var offset int
@@ -584,6 +585,7 @@ debug:
 	fmt.Println("=====================Other Information==================")
 	fmt.Printf("ΔT≈%fs,寿星ΔT≈%fs\n", deltat(ly.dzs[0].JD)*86400, deltat2(ly.dzs[0].JD)*86400)
 	fmt.Println("两个自然年是否有闰：", ly.leap)
+
 	for i, dz := range ly.dzs {
 		fmt.Printf("冬至:%d %6.f %s\n", i, jd2jdN(beijingTime(dz)), dz)
 	}
