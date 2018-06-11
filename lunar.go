@@ -56,11 +56,12 @@ type LunarYear struct {
 
 // NatureYear 两个农历自然年
 type NatureYear struct {
-	Terms  [2][]JDPlus   // 两个自然年包含的节气
-	Shuoes [2][]JDPlus   // 两个自然年包含的朔日
-	dzs    [3]JDPlus     // 划分两个自然年的三个冬至
-	leap   [2]bool       // 两个自然年中是否有闰月
-	months []*LunarMonth // 两个自然年的所有月份
+	Terms      [2][]JDPlus   // 两个自然年包含的节气
+	Shuoes     [2][]JDPlus   // 两个自然年包含的朔日
+	dzs        [3]JDPlus     // 划分两个自然年的三个冬至
+	leap       [2]bool       // 两个自然年中是否有闰月
+	months     []*LunarMonth // 两个自然年的所有月份
+	springFest []float64     // 两个自然年的所有月份
 }
 
 // JDPlus 朔气JD，Avg是否为平朔气
@@ -355,7 +356,13 @@ func (ly *LunarYear) genLunarMonth() {
 
 	// 定农历年首（春节）
 	var offset int
-	ly.SpringFest, offset = getSpringFest(ly.Shuoes[0], leapI[0], ly.YueJian)
+	for i := 0; i < 2; i++ {
+		sf, tmp := getSpringFest(ly.Shuoes[i], leapI[i], ly.YueJian)
+		ly.springFest = append(ly.springFest, sf)
+		if i == 0 {
+			ly.SpringFest, offset = sf, tmp
+		}
+	}
 
 	yjNum := int(ly.YueJian)
 	if ly.YueJian == ZZYY {
@@ -435,7 +442,7 @@ func getSpringFest(shuoes []JDPlus, leapI int, yj YueJian) (float64, int) {
 	var offset int
 	switch yj {
 	case ZZ, ZZYY:
-		springFest = shuoes[1]
+		springFest = shuoes[0]
 	case CZ:
 		springFest = shuoes[1]
 		offset = 1

@@ -72,6 +72,7 @@ type Day struct {
 	LYN    int  //农历年数，以春节为界
 	LYSX   ichang.Shengxiao
 	GZInfo
+	special
 }
 
 // GZInfo 干支信息
@@ -89,6 +90,15 @@ type GZ struct {
 	G ichang.Tiangan
 	Z ichang.Dizhi
 }
+
+type special uint8
+
+const (
+	NoSpecial special = iota
+	WuZeTian1
+	Leap13
+	After9
+)
 
 // CalendarToJD converts a Gregorian/Julian Calendar date to julian day num(12:00)
 func CalendarToJD(y, m int, d float64) float64 {
@@ -110,6 +120,10 @@ func LeapYear(y int) bool {
 func genDay(jd float64, ly *LunarYear) Day {
 	var day Day
 	jdN := jd2jdN(jd)
+	secondRound := false
+	if jdN >= jd2jdN(ly.Shuoes[1][0].JD) {
+		secondRound = true
+	}
 	// 近似处理，精确到1毫秒，主要处理因截断导致的如59.99999秒在时辰交替点的判断出现的误差
 	// 只需要时间，不涉及日期，所以对儒略历日期，格里历日期都适用
 	tm := julian.JDToTime(jd).Round(time.Millisecond)
@@ -138,9 +152,29 @@ func genDay(jd float64, ly *LunarYear) Day {
 	day.LMDn = prev.dn
 	day.LMleap = prev.leap
 	day.LYN = prev.year
+	switch {
+	//武则天子正寅一，之前建立 LunarYear 的时候月序号采用的是子寅，这样只要修改11为1就好了
+	case ly.YueJian == ZZYY:
+		switch day.LMN {
+		case 11:
+			day.LMN = 1
+		case 1:
+			day.special = WuZeTian1
+		}
+		// 19年7闰，年末闰十三
+	case ly.ZhiRun == R7in19st1:
+		day.special = Leap13
+		// 19年7闰，年末后九
+	case ly.ZhiRun == R7in19st10:
+		day.special = After9
+	}
 
 	lc := jd2jdN(beijingTime(ly.Terms[0][3])) // 立春
-	sf := ly.SpringFest                       // 春节
+	sf := ly.springFest[0]                    // 春节
+	if secondRound {
+		lc = jd2jdN(beijingTime(ly.Terms[1][3])) // 立春
+		sf = ly.springFest[1]                    // 春节
+	}
 	// 年干支，春节为界
 	dCnt := sf - J1984lc // 计算日所在农历自然年的春节与1984年平均春节(立春附近)相差天数估计
 	yCnt := math.Floor(dCnt/365.2422 + 0.5)
@@ -161,11 +195,32 @@ func genDay(jd float64, ly *LunarYear) Day {
 
 	dz := jd2jdN(beijingTime(ly.Terms[0][0]))
 	xz := jd2jdN(beijingTime(ly.Terms[0][12]))
+
 	yCnt = math.Floor((xz - J1998dx) / 365.2422) // 用夏至点算离1998年12月7(大雪)的完整年数，确保不会有误差
 	ymCnt := yCnt * 12                           // 从1998年12月7(大雪)到计算日前一个大雪的累计月数
 
 	// 月干支，朔为界
-	mCnt := int(ymCnt) + mod(day.LMN+1, 12)
+
+	offsetMonthNum := 0
+	switch ly.YueJian {
+	case ZZ:
+		offsetMonthNum = mod(day.LMN-1, 12)
+	case YZ:
+		offsetMonthNum = mod(day.LMN+1, 12)
+	case CZ:
+		offsetMonthNum = mod(day.LMN, 12)
+	case ZZYY:
+		tmp := day.LMN
+		if day.LMN == 1 && day.special != WuZeTian1 {
+			tmp = 11
+		}
+		offsetMonthNum = mod(tmp+1, 12)
+	}
+	if secondRound {
+		offsetMonthNum += 12
+	}
+
+	mCnt := int(ymCnt) + offsetMonthNum
 	g, z = mod(mCnt, 10), mod(mCnt+10, 12)
 	day.LMGZ0 = GZ{ichang.Tiangan(g), ichang.Dizhi(z)}
 	// 月干支，节为界
@@ -221,12 +276,19 @@ func (d Day) String() string {
 	leap := ""
 	if d.LMleap {
 		leap = "闰"
+		if d.special == After9 {
+			leap = "后"
+		}
 	}
 	size := "小"
 	if d.LMDn > 29 {
 		size = "大"
 	}
-	b.WriteString(leap + monthName[d.LMN-1] + "（" + size + "）" + dayName[d.LDN-1] + "\n")
+	leapName := monthName[d.LMN-1]
+	if d.special == Leap13 {
+		leapName = "十三"
+	}
+	b.WriteString(leap + leapName + "（" + size + "）" + dayName[d.LDN-1] + "\n")
 	b.WriteString(d.LYGZ0.String() + "年 " + d.LMGZ0.String() + "月 " + d.LDGZ.String() + "日\n")
 	b.WriteString("四柱：" + d.LYGZ1.String() + " " + d.LMGZ1.String() + " " + d.LDGZ.String() + " " + d.LTGZ.String())
 	return b.String()
@@ -234,8 +296,8 @@ func (d Day) String() string {
 
 func (m Month) String() string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("📅%13s%d月\n", " ", m.Num))
-	b.WriteString("   日  一  二  三  四  五  六\n")
+	b.WriteString(fmt.Sprintf("📅%20s%d月\n", " ", m.Num))
+	b.WriteString("    日    一    二    三    四    五    六\n")
 
 	k := 1
 	idx := 0
@@ -248,15 +310,20 @@ Loop:
 		b.WriteString("☀️  ")
 		if i == 0 {
 			for j := 0; j < m.Week0; j++ {
-				b.WriteString(fmt.Sprintf("%4s", " "))
+				b.WriteString(fmt.Sprintf("%6s", " "))
 			}
 		}
 		for j := 0; j < cnt; j++ {
-			width := 2
-			if k < 10 && j == cnt-1 {
-				width = 1
+			// width := 2
+			// if k < 10 && j == cnt-1 {
+			// 	width = 1
+			// }
+			// b.WriteString(fmt.Sprintf("%-*d", width, m.Days[k-1].DN))            //左对齐
+			if j == cnt-1 || k == m.Dn {
+				b.WriteString(" " + riNames[m.Days[k-1].DN-1]) //左对齐
+			} else {
+				b.WriteString(" " + riNames[m.Days[k-1].DN-1] + " ") //左对齐
 			}
-			b.WriteString(fmt.Sprintf("%-*d", width, k)) //左对齐
 			k++
 			if k > m.Dn {
 				// b.WriteString("\n")
@@ -271,21 +338,31 @@ Loop:
 		b.WriteString("🌛  ")
 		if i == 0 {
 			for j := 0; j < m.Week0; j++ {
-				b.WriteString(fmt.Sprintf("%4s", " "))
+				b.WriteString(fmt.Sprintf("%6s", " "))
 			}
 		}
 		for j := 0; j < cnt; j++ {
 			d := m.Days[idx]
 			switch {
 			case d.LDN == 1:
-				b.WriteString(yueNames[d.LMN-1])
+				if d.LMN == 1 && d.special == WuZeTian1 { //非武则天1月
+					b.WriteString("一月")
+				} else {
+					if d.LMleap && d.special == Leap13 {
+						b.WriteString(" ⑬")
+					} else {
+						b.WriteString(monthName[d.LMN-1])
+					}
+				}
 				if d.LMleap {
 					b.WriteString("®")
 				}
-			case d.LDN > 1 && d.LDN < 10 && (j == cnt-1 || idx == m.Dn-1):
-				b.WriteString(fmt.Sprintf("%-d", d.LDN)) //左对齐
+			// case d.LDN > 1 && d.LDN < 10 && (j == cnt-1 || idx == m.Dn-1):
+			// 	b.WriteString(fmt.Sprintf("%-d", d.LDN)) //左对齐
+			// default:
+			// 	b.WriteString(fmt.Sprintf("%-2d", d.LDN)) //左对齐
 			default:
-				b.WriteString(fmt.Sprintf("%-2d", d.LDN)) //左对齐
+				b.WriteString(dayName[d.LDN-1])
 			}
 			idx++
 			if idx > m.Dn-1 {
@@ -304,6 +381,7 @@ Loop:
 		b.WriteString("\n")
 	}
 
+	b.WriteString("\n")
 	for _, t := range m.Terms {
 		b.WriteString("\n")
 		_, _, day := julian.JDToCalendar(beijingTime(t.JDPlus))
@@ -321,7 +399,7 @@ func (y Year) String() string {
 	if y.Leap {
 		leap = "（闰）"
 	}
-	b.WriteString(fmt.Sprintf("🗓️%13s%d年%s\n", " ", y.Num, leap))
+	b.WriteString(fmt.Sprintf("🗓️%17s%d年%s\n", " ", y.Num, leap))
 	for i := 0; i < 12; i++ {
 		b.WriteString(y.Months[i].String())
 		b.WriteString("\n")
@@ -333,7 +411,7 @@ func time2sci(t time.Time) int {
 	return ((t.Hour() + 1) / 2) % 12
 }
 
-// DayCalendar generates the Day Calendar including Lunar infomation according to the provided Gregorian date
+// DayCalendar generates the Day Calendar including Lunar infomation according to the provided Gregorian/Julian calendar date
 // 以格里历为基准附加农历信息的日历
 // 单独调用时ly可置nil，ly只是为了方便需要多次调用（如建月历）的时候无需多次建立农历
 // d 可以为小数，小数部分代表当天的时间，用于计算时辰
@@ -353,7 +431,7 @@ func DayCalendar(y, m int, d float64, AD bool, ly *LunarYear) (Day, error) {
 	return day, nil
 }
 
-// MonthCalendar generates the Month Calendar including Lunar infomation according to the provided Gregorian month
+// MonthCalendar generates the Month Calendar including Lunar infomation according to the provided Gregorian/Julian calendar month
 // 以格里历为基准附加农历信息的月历
 // 单独调用时ly可置nil，ly只是为了方便需要多次调用（如建年历）的时候无需多次建立农历
 func MonthCalendar(y, m int, AD bool, ly *LunarYear) (Month, error) {
@@ -373,6 +451,9 @@ func MonthCalendar(y, m int, AD bool, ly *LunarYear) (Month, error) {
 	cnt := monthDayCnt[m-1]
 	if m == 2 && LeapYear(y) {
 		cnt++
+	}
+	if jdN0 == 2299157 { //儒略历向格里历过渡的那一个月
+		cnt = cnt - 10
 	}
 	month.Dn = cnt                          //本月的天数
 	month.Week0 = julian.DayOfWeek(jdN0)    //月首的星期
@@ -400,8 +481,8 @@ Loop:
 	return month, nil
 }
 
-// YearCalendar generates the Year Calendar including Lunar infomation according to the provided Gregorian year
-// 以格里历为基准附加农历信息的年历
+// YearCalendar generates the Year Calendar including Lunar infomation according to the provided Gregorian/Julian calendar year
+// 以阳历为基准附加农历信息的年历
 func YearCalendar(y int, AD bool) (Year, error) {
 	var year Year
 	yN := y
@@ -425,9 +506,11 @@ func YearCalendar(y int, AD bool) (Year, error) {
 	return year, nil
 }
 
-// LunarToGregorian converts Lunar date to Gregorian date
-// 农历日期转格里历日期
-func LunarToGregorian(y, m, d int, AD, leap bool) (yg, mg, dg int, err error) {
+// LunarToSolar converts Lunar calendar date to Gregorian/Julian calendar date
+// 农历日期转格里历/儒略历日期
+// 若查询的是武则天改历期间的农历正月，由于有一月的并存，请以11作为正月的值输入，其他不变
+// 若查询的是秦历后九月，周历闰十三月当作闰九月和闰十二月处理，对应的月份值分别为9，12
+func LunarToSolar(y, m, d int, AD, leap bool) (yg, mg, dg int, err error) {
 	y, err = chkNum(y, m, d, AD, true)
 	if err != nil {
 		return 0, 0, 0, err
@@ -448,9 +531,9 @@ func LunarToGregorian(y, m, d int, AD, leap bool) (yg, mg, dg int, err error) {
 	return 0, 0, 0, errConvLToG
 }
 
-// GregorianToLunar converts Gregorian date to Lunar date
-// 格里历日期转农历日期
-func GregorianToLunar(y, m, d int, AD bool) (yl, ml, dl int, leap bool, err error) {
+// SolarToLunar converts Gregorian/Julian calendar date to Lunar date
+// 格里、如略历日期转农历日期
+func SolarToLunar(y, m, d int, AD bool) (yl, ml, dl int, leap bool, err error) {
 	y, err = chkNum(y, m, d, AD, false)
 	if err != nil {
 		return 0, 0, 0, false, err
