@@ -504,7 +504,7 @@ func YearCalendar(y int, AD bool) (*Year, error) {
 // 农历日期转格里历/儒略历日期
 // 若查询的是武则天改历期间的农历正月，由于有一月的并存，请以11作为正月的值输入，其他不变
 // 若查询的是秦历后九月，周历闰十三月当作闰九月和闰十二月处理，对应的月份值分别为9，12
-func LunarToSolar(y, m, d int, AD, leap bool) (yg, mg, dg int, err error) {
+func LunarToSolar(y, m, d int, AD, leap bool) (ys, ms, ds int, err error) {
 	y, err = chkNum(y, m, d, AD, true)
 	if err != nil {
 		return 0, 0, 0, err
@@ -517,9 +517,9 @@ func LunarToSolar(y, m, d int, AD, leap bool) (yg, mg, dg int, err error) {
 				return 0, 0, 0, errDateNumExceedLunar
 			}
 			jd00 := jd2jd00(month.d0 + float64(d-1))
-			yg, mg, dgf := julian.JDToCalendar(jd00)
-			dg = int(dgf)
-			return yg, mg, dg, nil
+			ys, ms, dsf := julian.JDToCalendar(jd00)
+			ds = int(dsf)
+			return ys, ms, ds, nil
 		}
 	}
 	return 0, 0, 0, errConvLToG
