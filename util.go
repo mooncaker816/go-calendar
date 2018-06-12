@@ -1,7 +1,6 @@
 package calendar
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/mooncaker816/learnmeeus/v3/base"
@@ -9,11 +8,10 @@ import (
 	dt "github.com/mooncaker816/learnmeeus/v3/deltat"
 
 	"github.com/mooncaker816/learnmeeus/v3/julian"
-	sexa "github.com/soniakeys/sexagesimal"
 	"github.com/soniakeys/unit"
 )
 
-var dtat = []float64{ // TD - UT1 计算表
+var dtat = []float64{
 	-4000, 108371.7, -13036.80, 392.000, 0.0000,
 	-500, 17201.0, -627.82, 16.170, -0.3413,
 	-150, 12200.6, -346.41, 5.403, -0.1593,
@@ -33,36 +31,8 @@ var dtat = []float64{ // TD - UT1 计算表
 	1960, 33.2, 0.51, 0.231, -0.0109,
 	1980, 51.0, 1.29, -0.026, 0.0032,
 	2000, 63.87, 0.1, 0, 0,
-	2005, 64.7, 0.4, 0, 0, //一次项记为x,则 10x=0.4秒/年*(2015-2005),解得x=0.4
+	2005, 64.7, 0.4, 0, 0,
 	2015, 69,
-}
-
-// SolarTime is a local UTC contains year,month,date and time
-type SolarTime struct {
-	Y, M, D int
-	T       unit.Time
-}
-
-// DT2SolarTime converts DT to local time
-func DT2SolarTime(sq JDPlus) SolarTime {
-	// log.Println(julian.JDToTime(jde))
-	var st SolarTime
-	jd := sq.JD
-	if !sq.Avg {
-		ΔT := dt.Interp10A(sq.JD)
-		jd = sq.JD - ΔT.Day() + float64(8)/24
-	}
-	// jd0h := math.Floor(jd+0.5) - 0.5 //当天0点 jd
-	var day float64
-	st.Y, st.M, day = julian.JDToCalendar(jd)
-	dz, f := math.Modf(day)
-	st.D = int(dz)
-	st.T = unit.TimeFromDay(f)
-	return st
-}
-
-func (st SolarTime) String() string {
-	return fmt.Sprintf("%d年%d月%d日 %s", st.Y, st.M, st.D, sexa.FmtTime(st.T))
 }
 
 func deltat(jde float64) float64 {

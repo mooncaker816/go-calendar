@@ -516,28 +516,6 @@ func sInDZs(s, dz0, dz1 JDPlus) bool {
 	return false
 }
 
-// 由于古历算法的局限性，少数朔日实际有误，此处仍按古历进行修正
-// func shuoC(shuo JDPlus, a []struct{ jdN, delta float64 }) JDPlus {
-// 	if shuo.Avg {
-// 		return shuo
-// 	}
-// 	key := jd2jdN(beijingTime(shuo))
-// 	lo := 0
-// 	hi := len(a) - 1
-// 	for lo <= hi {
-// 		mid := lo + (hi-lo)/2
-// 		if key < a[mid].jdN {
-// 			hi = mid - 1
-// 		} else if key > a[mid].jdN {
-// 			lo = mid + 1
-// 		} else {
-// 			shuo.JD += a[mid].delta
-// 			return shuo
-// 		}
-// 	}
-// 	return shuo
-// }
-
 func checkLY(ly *LunarYear, year int, jdN float64) *LunarYear {
 	if ly == nil || jdN < jd2jdN(ly.dzs[0].JD) {
 		ly = GenLunarYear(year)

@@ -5,10 +5,13 @@ import (
 	"sort"
 )
 
+// YueJian describes when to generate the "正月"
 type YueJian uint8
 
+// ZhiRun describes the strategy of arranging the leap lunar year
 type ZhiRun uint8
 
+// constants of YueJian & ZhiRun
 const (
 	ZZ         YueJian = iota //子正
 	CZ                        //丑正
@@ -19,8 +22,9 @@ const (
 	RNoZQ                     //无中气置闰
 )
 
+// Period describes the important strategies of creating a Lunar year
 type Period struct {
-	GYear int //冬至对应的格里历年份
+	GYear int
 	YueJian
 	ZhiRun
 }
