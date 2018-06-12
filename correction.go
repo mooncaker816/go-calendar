@@ -21,7 +21,7 @@ func init() {
 }
 
 func shuoC(s JDPlus) JDPlus {
-	if s.Avg {
+	if s.UT8 {
 		return s
 	}
 	if raShuoMinus.Contains(uint32(jd2jdN(beijingTime(s)))) {
@@ -34,7 +34,7 @@ func shuoC(s JDPlus) JDPlus {
 }
 
 func qiC(q JDPlus) JDPlus {
-	if q.Avg {
+	if q.UT8 {
 		return q
 	}
 	if raQiMinus.Contains(uint32(jd2jdN(beijingTime(q)))) {

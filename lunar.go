@@ -59,20 +59,20 @@ type NatureYear struct {
 	Terms      [2][]JDPlus   // 两个自然年包含的节气
 	Shuoes     [2][]JDPlus   // 两个自然年包含的朔日
 	dzs        [3]JDPlus     // 划分两个自然年的三个冬至
-	leap       [2]bool       // 两个自然年中是否有闰月
 	months     []*LunarMonth // 两个自然年的所有月份
-	springFest []float64     // 两个自然年的所有月份
+	leap       [2]bool       // 两个自然年中是否有闰月
+	springFest [2]float64    // 两个自然年的春节
 }
 
-// JDPlus 朔气JD，Avg是否为平朔气
+// JDPlus 朔气JD，UT8是否已经从力学时修正为北京时
 type JDPlus struct {
 	JD  float64
-	Avg bool //平朔平气，已考虑了ΔT和北京时差8h
+	UT8 bool //修正了ΔT和北京时差8h
 }
 
 func (jdp JDPlus) String() string {
 	jd := jdp.JD
-	if !jdp.Avg {
+	if !jdp.UT8 {
 		ΔT := dt.Interp10A(jd)
 		jd = jd - ΔT.Day() + float64(8)/24
 	}
@@ -360,7 +360,7 @@ func (ly *LunarYear) genLunarMonth() {
 	var offset int
 	for i := 0; i < 2; i++ {
 		sf, tmp := getSpringFest(ly.Shuoes[i], leapI[i], ly.YueJian)
-		ly.springFest = append(ly.springFest, sf)
+		ly.springFest[i] = sf
 		if i == 0 {
 			ly.SpringFest, offset = sf, tmp
 		}
@@ -460,7 +460,7 @@ func getSpringFest(shuoes []JDPlus, leapI int, yj YueJian) (float64, int) {
 			offset++
 		}
 	}
-	if springFest.Avg {
+	if springFest.UT8 {
 		return springFest.JD, offset
 	}
 	return jd2jdN(beijingTime(springFest)), offset
@@ -484,7 +484,7 @@ func i2monthseq(i int, yj YueJian) int {
 
 // 将力学时转为北京时间
 func beijingTime(sq JDPlus) float64 {
-	if sq.Avg {
+	if sq.UT8 {
 		return sq.JD
 	}
 	return sq.JD - deltat(sq.JD) + float64(8)/24
