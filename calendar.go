@@ -92,13 +92,17 @@ type GZ struct {
 	Z ichang.Dizhi
 }
 
+func (gz GZ) String() string {
+	return gz.G.String() + gz.Z.String()
+}
+
 type special uint8
 
 const (
-	NoSpecial special = iota
-	WuZeTian1
-	Leap13
-	After9
+	noSpecial special = iota
+	wuZeTian1
+	leap13
+	after9
 )
 
 // CalendarToJD converts a Gregorian/Julian Calendar date to julian day num(12:00)
@@ -172,14 +176,14 @@ func genDay(jd float64, ly *LunarYear) *Day {
 		case 11:
 			day.LMN = 1
 		case 1:
-			day.special = WuZeTian1
+			day.special = wuZeTian1
 		}
 	// 19年7闰，年末闰十三
 	case ly.ZhiRun == R7in19st1 && day.LMleap:
-		day.special = Leap13
+		day.special = leap13
 	// 19年7闰，年末后九
 	case ly.ZhiRun == R7in19st10 && day.LMleap:
-		day.special = After9
+		day.special = after9
 	}
 
 	lc := jd2jdN(beijingTime(ly.Terms[0][3])) // 立春
@@ -224,7 +228,7 @@ func genDay(jd float64, ly *LunarYear) *Day {
 		offsetMonthNum = mod(day.LMN, 12)
 	case ZZYY:
 		tmp := day.LMN
-		if day.LMN == 1 && day.special != WuZeTian1 {
+		if day.LMN == 1 && day.special != wuZeTian1 {
 			tmp = 11
 		}
 		offsetMonthNum = mod(tmp+1, 12)
@@ -264,16 +268,6 @@ func genDay(jd float64, ly *LunarYear) *Day {
 	return &day
 }
 
-func (gz GZ) String() string {
-	return gz.G.String() + gz.Z.String()
-}
-
-// 公元2000年1月1日
-// 星期六 摩羯座
-// JD 2451545
-// 农历[狗年] 四月（大）三十
-// 甲子年 甲子月 甲子日
-// 四柱：甲子 甲子 甲子 甲子
 func (d Day) String() string {
 	var b strings.Builder
 	y := d.YN
@@ -289,7 +283,7 @@ func (d Day) String() string {
 	leap := ""
 	if d.LMleap {
 		leap = "闰"
-		if d.special == After9 {
+		if d.special == after9 {
 			leap = "后"
 		}
 	}
@@ -298,7 +292,7 @@ func (d Day) String() string {
 		size = "大"
 	}
 	leapName := monthName[d.LMN-1]
-	if d.special == Leap13 {
+	if d.special == leap13 {
 		leapName = "十三"
 	}
 	b.WriteString(leap + leapName + "（" + size + "）" + dayName[d.LDN-1] + "\n")
@@ -327,19 +321,13 @@ Loop:
 			}
 		}
 		for j := 0; j < cnt; j++ {
-			// width := 2
-			// if k < 10 && j == cnt-1 {
-			// 	width = 1
-			// }
-			// b.WriteString(fmt.Sprintf("%-*d", width, m.Days[k-1].DN))            //左对齐
 			if j == cnt-1 || k == m.Dn {
-				b.WriteString(" " + riNames[m.Days[k-1].DN-1]) //左对齐
+				b.WriteString(" " + riNames[m.Days[k-1].DN-1])
 			} else {
-				b.WriteString(" " + riNames[m.Days[k-1].DN-1] + " ") //左对齐
+				b.WriteString(" " + riNames[m.Days[k-1].DN-1] + " ")
 			}
 			k++
 			if k > m.Dn {
-				// b.WriteString("\n")
 				break
 			}
 			if j == cnt-1 {
@@ -358,10 +346,10 @@ Loop:
 			d := m.Days[idx]
 			switch {
 			case d.LDN == 1:
-				if d.LMN == 1 && d.special == WuZeTian1 { //非武则天1月
+				if d.LMN == 1 && d.special == wuZeTian1 { //非武则天1月
 					b.WriteString("一月")
 				} else {
-					if d.LMleap && d.special == Leap13 {
+					if d.LMleap && d.special == leap13 {
 						b.WriteString(" ⑬")
 					} else {
 						b.WriteString(monthName[d.LMN-1])
@@ -370,16 +358,11 @@ Loop:
 				if d.LMleap {
 					b.WriteString("®")
 				}
-			// case d.LDN > 1 && d.LDN < 10 && (j == cnt-1 || idx == m.Dn-1):
-			// 	b.WriteString(fmt.Sprintf("%-d", d.LDN)) //左对齐
-			// default:
-			// 	b.WriteString(fmt.Sprintf("%-2d", d.LDN)) //左对齐
 			default:
 				b.WriteString(dayName[d.LDN-1])
 			}
 			idx++
 			if idx > m.Dn-1 {
-				// b.WriteString("\n")
 				break Loop
 			}
 			if j == cnt-1 {
@@ -394,6 +377,7 @@ Loop:
 		b.WriteString("\n")
 	}
 
+	// 添加当月节气
 	b.WriteString("\n")
 	for _, t := range m.Terms {
 		b.WriteString("\n")
@@ -420,6 +404,7 @@ func (y Year) String() string {
 	return b.String()
 }
 
+// time to "时辰"索引
 func time2sci(t time.Time) int {
 	return ((t.Hour() + 1) / 2) % 12
 }
