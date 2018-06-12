@@ -31,24 +31,25 @@ var (
 	errConvGToL           = errors.New("failed convert gregorian date to lunar date")
 )
 
-// Year contains 1 Gregorian year's calendar info including Lunar info
+// Year contains 1 year's calendar info including Lunar info
 type Year struct {
 	Num    int
-	Months []Month
+	Months []*Month
 	Leap   bool
 }
 
-// Month contains 1 Gregorian month's calendar info including Lunar info
+// Month contains 1 month's calendar info including Lunar info
 type Month struct {
 	Num   int     //公历月份
 	D0    float64 //月首儒略日数
 	Dn    int     //本月的天数
 	Week0 int     //月首的星期
 	WeekN int     //本月的总周数
-	Terms []Term  //本月的节气
-	Days  []Day   //该月的日
+	Terms []*Term //本月的节气
+	Days  []*Day  //该月的日
 }
 
+// Term stands for a solar term
 type Term struct {
 	JDPlus
 	Name string
@@ -129,7 +130,7 @@ func LeapYear(y int) bool {
 }
 
 // genDay generates the details for a specific JD
-func genDay(jd float64, ly *LunarYear) Day {
+func genDay(jd float64, ly *LunarYear) *Day {
 	var day Day
 	jdN := jd2jdN(jd)
 	secondRound := false
@@ -260,7 +261,7 @@ func genDay(jd float64, ly *LunarYear) Day {
 		xzI++
 	}
 	day.XZ = (xzI + 12) % 12
-	return day
+	return &day
 }
 
 func (gz GZ) String() string {
@@ -427,37 +428,33 @@ func time2sci(t time.Time) int {
 // 以阳历为基准附加农历信息的日历
 // 单独调用时ly可置nil，ly只是为了方便需要多次调用（如建月历）的时候无需多次建立农历
 // d 可以为小数，小数部分代表当天的时间，用于计算时辰
-func DayCalendar(y, m int, d float64, AD bool, ly *LunarYear) (Day, error) {
-	var day Day
+func DayCalendar(y, m int, d float64, AD bool, ly *LunarYear) (*Day, error) {
 	y, err := chkNum(y, m, int(math.Floor(d)), AD, false)
 	if err != nil {
-		return day, err
+		return nil, err
 	}
 
-	// jd00 := jd2jd00(julian.CalendarGregorianToJD(y, m, float64(d)))
-	// jd := jd00 + float64(time.Now().Hour())/24
 	jd := calendarToJD(y, m, d)
 	ly = checkLY(ly, y, jd2jdN(jd))
 
-	day = genDay(jd, ly)
-	return day, nil
+	return genDay(jd, ly), nil
 }
 
 // MonthCalendar generates the Month Calendar including Lunar infomation according to the provided Gregorian/Julian calendar month
 // 以阳历为基准附加农历信息的月历
 // 单独调用时ly可置nil，ly只是为了方便需要多次调用（如建年历）的时候无需多次建立农历
-func MonthCalendar(y, m int, AD bool, ly *LunarYear) (Month, error) {
-	var month Month
+func MonthCalendar(y, m int, AD bool, ly *LunarYear) (*Month, error) {
 	if y <= 0 {
-		return month, errYearNum
+		return nil, errYearNum
 	}
 	if !AD {
 		y = -y + 1
 	}
 	if m < 1 || m > 12 {
-		return month, errMonthNum
+		return nil, errMonthNum
 	}
 	jdN0 := calendarToJD(y, m, 1.5)
+	var month Month
 	month.Num = m   //公历月份
 	month.D0 = jdN0 //月首儒略日数
 	cnt := monthDayCnt[m-1]
@@ -472,14 +469,14 @@ func MonthCalendar(y, m int, AD bool, ly *LunarYear) (Month, error) {
 	month.WeekN = (month.Week0+cnt-1)/7 + 1 //本月的总周数
 	h := time.Now().Hour()
 	jd := jd2jd00(jdN0) + float64(h)/24
-	days := make([]Day, cnt)
+	days := make([]*Day, cnt)
 	ly = checkLY(ly, y, jdN0)
 Loop:
 	for _, terms := range ly.Terms {
 		for i, term := range terms {
 			tjdN := jd2jdN(beijingTime(term))
 			if i <= 23 && tjdN >= jdN0 && tjdN <= jdN0+float64(cnt-1) {
-				month.Terms = append(month.Terms, Term{term, termName[i]})
+				month.Terms = append(month.Terms, &Term{term, termName[i]})
 			}
 			if tjdN > jdN0+float64(cnt-1) {
 				break Loop
@@ -490,32 +487,32 @@ Loop:
 		days[i] = genDay(jd+float64(i), ly)
 	}
 	month.Days = days
-	return month, nil
+	return &month, nil
 }
 
 // YearCalendar generates the Year Calendar including Lunar infomation according to the provided Gregorian/Julian calendar year
 // 以阳历为基准附加农历信息的年历
-func YearCalendar(y int, AD bool) (Year, error) {
-	var year Year
+func YearCalendar(y int, AD bool) (*Year, error) {
 	yN := y
 	if y <= 0 {
-		return year, errYearNum
+		return nil, errYearNum
 	}
 	if !AD {
 		yN = -y + 1
 	}
+	var year Year
 	year.Num = yN
 	year.Leap = LeapYear(y)
-	year.Months = make([]Month, 12)
+	year.Months = make([]*Month, 12)
 	ly := GenLunarYear(yN)
 	for i := 0; i < 12; i++ {
 		m, err := MonthCalendar(y, i+1, AD, ly)
 		if err != nil {
-			return year, err
+			return nil, err
 		}
 		year.Months[i] = m
 	}
-	return year, nil
+	return &year, nil
 }
 
 // LunarToSolar converts Lunar calendar date to Gregorian/Julian calendar date
