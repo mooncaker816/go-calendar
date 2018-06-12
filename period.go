@@ -29,7 +29,7 @@ type Period struct {
 	ZhiRun
 }
 
-func (ly *LunarYear) getPeriod(year int) {
+func (ly *LunarYear) setPeriod(year int) {
 	var p Period
 	p.GYear = year
 	p.YueJian = YZ

@@ -103,7 +103,7 @@ func GenLunarYear(year int, opts ...Option) *LunarYear {
 	for _, opt := range opts {
 		opt(ly)
 	}
-	ly.getPeriod(year)
+	ly.setPeriod(year)
 	ly.Year = year
 	ly.LeapN = -1
 	ly.dz()            // 计算自然年起算3个冬至日
