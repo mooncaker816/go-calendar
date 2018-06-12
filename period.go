@@ -52,20 +52,19 @@ func (ly *LunarYear) getPeriod(year int) {
 }
 
 func chkR7in19(y int) bool {
-	// if y > -104 || y < -364 {
-	// 	return false
-	// }
-	// 公元前170年为闰年，为第一式闰章的终止年
 	v := mod((y - (-169)), 19) //闰章索引
 	if v == 0 {
 		v = 19
 	}
-	if y+1 > -169 {
+	switch {
+	//闰章第二式
+	case y <= -226 || y > -169 && y <= -104:
 		i := sort.SearchInts(r2, v)
 		if i < len(r2) && r2[i] == v {
 			return true
 		}
-	} else {
+	//闰章第一式
+	case y > -226 && y <= -169:
 		i := sort.SearchInts(r1, v)
 		if i < len(r1) && r1[i] == v {
 			return true
