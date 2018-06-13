@@ -4,7 +4,7 @@ go:
   - master
 
 env:
-  - VSOP87 = "./VSOP87"
+  - VSOP87="./VSOP87"
 
 install:
   - go get -v github.com/mooncaker816/go-calendar/...
