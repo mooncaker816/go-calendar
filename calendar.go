@@ -106,6 +106,7 @@ const (
 )
 
 // CalendarToJD converts a Gregorian/Julian Calendar date to julian day num(12:00)
+//
 // 将阳历日期转为儒略日
 func CalendarToJD(AD bool, y, m int, d float64) (float64, error) {
 	if y <= 0 {
@@ -124,8 +125,9 @@ func calendarToJD(y, m int, d float64) float64 {
 	return julian.CalendarJulianToJD(y, m, d)
 }
 
-// LeapYear checks if the calendar year is leap or not
-// 判断阳历年份是否为闰年，格里历，儒略历各自判断
+//LeapYear checks if the calendar year is leap or not
+//
+//判断阳历年份是否为闰年，格里历，儒略历各自判断
 func LeapYear(y int) bool {
 	if y <= 1582 {
 		return julian.LeapYearJulian(y)
@@ -409,9 +411,12 @@ func time2sci(t time.Time) int {
 	return ((t.Hour() + 1) / 2) % 12
 }
 
-// DayCalendar generates the Day Calendar including Lunar infomation according to the provided Gregorian/Julian calendar date
+// DayCalendar generates the Day Calendar including Lunar infomation according to the provided Gregorian/Julian calendar date.
+//
 // 以阳历为基准附加农历信息的日历
+//
 // 单独调用时ly可置nil，ly只是为了方便需要多次调用（如建月历）的时候无需多次建立农历
+//
 // d 可以为小数，小数部分代表当天的时间，用于计算时辰
 func DayCalendar(y, m int, d float64, AD bool, ly *LunarYear) (*Day, error) {
 	y, err := chkNum(y, m, int(math.Floor(d)), AD, false)
@@ -426,7 +431,9 @@ func DayCalendar(y, m int, d float64, AD bool, ly *LunarYear) (*Day, error) {
 }
 
 // MonthCalendar generates the Month Calendar including Lunar infomation according to the provided Gregorian/Julian calendar month
+//
 // 以阳历为基准附加农历信息的月历
+//
 // 单独调用时ly可置nil，ly只是为了方便需要多次调用（如建年历）的时候无需多次建立农历
 func MonthCalendar(y, m int, AD bool, ly *LunarYear) (*Month, error) {
 	if y <= 0 {
@@ -476,6 +483,7 @@ Loop:
 }
 
 // YearCalendar generates the Year Calendar including Lunar infomation according to the provided Gregorian/Julian calendar year
+//
 // 以阳历为基准附加农历信息的年历
 func YearCalendar(y int, AD bool) (*Year, error) {
 	yN := y
@@ -501,8 +509,11 @@ func YearCalendar(y int, AD bool) (*Year, error) {
 }
 
 // LunarToSolar converts Lunar calendar date to Gregorian/Julian calendar date
+//
 // 农历日期转格里历/儒略历日期
+//
 // 若查询的是武则天改历期间的农历正月，由于有一月的并存，请以11作为正月的值输入，其他不变
+//
 // 若查询的是秦历后九月，周历闰十三月当作闰九月和闰十二月处理，对应的月份值分别为9，12
 func LunarToSolar(y, m, d int, AD, leap bool) (ys, ms, ds int, err error) {
 	y, err = chkNum(y, m, d, AD, true)
@@ -526,6 +537,7 @@ func LunarToSolar(y, m, d int, AD, leap bool) (ys, ms, ds int, err error) {
 }
 
 // SolarToLunar converts Gregorian/Julian calendar date to Lunar date
+//
 // 格里、如略历日期转农历日期
 func SolarToLunar(y, m, d int, AD bool) (yl, ml, dl int, leap bool, err error) {
 	y, err = chkNum(y, m, d, AD, false)
