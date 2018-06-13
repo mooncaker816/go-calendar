@@ -1,13 +1,13 @@
 package calendar
 
 import (
-	"FunOfSinoGraph/src/ichang"
 	"errors"
 	"fmt"
 	"math"
 	"strings"
 	"time"
 
+	"github.com/mooncaker816/FunOfSinoGraph/src/ichang"
 	"github.com/mooncaker816/learnmeeus/v3/julian"
 	sexa "github.com/soniakeys/sexagesimal"
 	"github.com/soniakeys/unit"
