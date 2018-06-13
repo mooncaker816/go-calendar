@@ -1,26 +1,20 @@
-# 说明
+# go-calendar
 
 [![Build Status](https://travis-ci.org/mooncaker816/go-calendar.svg?branch=master)](https://travis-ci.org/mooncaker816/go-calendar) [![GoDoc](https://godoc.org/github.com/mooncaker816/go-calendar?status.svg)](https://godoc.org/mooncaker816/go-calendar)
 
+## 1. Install
 
-## 1. 精度
+### 1.1 VSOP87
 
-推荐1654到未来200年间，精度较高，以下是与寿星天文历的相对误差，可作参考
+This library is based on Astronomical Algorithms by Jean Meeus, which is already implemented by library [soniakeys/meeus](https://github.com/soniakeys/meeus).  
+Additionally, "VSOP87" data files are required for calculating the planet position.
+Those files are present in folder `VSOP87` of this repository, ***you just need download them to any directory and set ENV variable with name `VSOP87` for the directory***.
 
-| 年份 | 平均相差 | ΔT取值相差 | 忽略ΔT后相差 |
-|------|:--------:|:----------:|:------------:|
-| 1600 |  ≈1m20s  | 20s        |≈1m           |
-| 1700 |  ≈5s     | 1.8s       |≈3.2s         |
-| 1800 |  ≈5s     | 2.1s       |≈2.9s         |
-| 1900 |  ≈2s     | 1.2s       |≈0.8s         |
-| 2000 |  ≈20-30s | 25s        |≈5s           |
-| 2100 |  ≈2m30s  | 0s         |≈2m30s        |
-| 2200 |  ≈2m30s  | 0s         |≈2m30s        |
-| 2300 |  ≈8m     | 0s         |≈8m           |
-| 2400 |  ≈18m    | 0s         |≈18m          |
-| 2500 |  ≈30m    | 0s         |≈30m          |
-| 2600 |  ≈45m    | 0s         |≈45m          |
-| 2700 |  ≈1h5m   | 0s         |≈1h5m         |
+### 1.2 go-calendar package
+
+Below command is suffcient to install this library, it will get all the packages according to the dependencies.
+
+`go get github.com/mooncaker816/go-calendar/...`
 
 ## 2. 一些程序选用的定历规则
 
@@ -288,3 +282,22 @@ JD 2458276
 大雪：7日 6ʰ32ᵐ39ˢ
 冬至：22日 27ᵐ56ˢ
 ```
+
+## 8. 精度
+
+推荐1654到未来200年间，精度较高，以下是与寿星天文历的相对误差，可作参考
+
+| 年份 | 平均相差 | ΔT取值相差 | 忽略ΔT后相差 |
+|------|:--------:|:----------:|:------------:|
+| 1600 |  ≈1m20s  | 20s        |≈1m           |
+| 1700 |  ≈5s     | 1.8s       |≈3.2s         |
+| 1800 |  ≈5s     | 2.1s       |≈2.9s         |
+| 1900 |  ≈2s     | 1.2s       |≈0.8s         |
+| 2000 |  ≈20-30s | 25s        |≈5s           |
+| 2100 |  ≈2m30s  | 0s         |≈2m30s        |
+| 2200 |  ≈2m30s  | 0s         |≈2m30s        |
+| 2300 |  ≈8m     | 0s         |≈8m           |
+| 2400 |  ≈18m    | 0s         |≈18m          |
+| 2500 |  ≈30m    | 0s         |≈30m          |
+| 2600 |  ≈45m    | 0s         |≈45m          |
+| 2700 |  ≈1h5m   | 0s         |≈1h5m         |
