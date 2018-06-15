@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/mooncaker816/go-calendar.svg?branch=master)](https://travis-ci.org/mooncaker816/go-calendar) [![GoDoc](https://godoc.org/github.com/mooncaker816/go-calendar?status.svg)](https://godoc.org/mooncaker816/go-calendar)
 
-## 1. Install
+## 1. 安装
 
 ### 1.1 VSOP87
 
