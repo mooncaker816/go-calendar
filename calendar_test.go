@@ -312,6 +312,7 @@ func ExampleMonthCalendar() {
 			return
 		}
 		fmt.Println(month)
+		month.SVG(1024, 800, "")
 	}
 	// Output:
 	//📅                    6月

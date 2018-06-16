@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"strings"
 	"time"
 
+	svg "github.com/ajstarks/svgo"
 	"github.com/mooncaker816/FunOfSinoGraph/src/ichang"
 	"github.com/mooncaker816/learnmeeus/v3/julian"
 	sexa "github.com/soniakeys/sexagesimal"
@@ -40,6 +42,7 @@ type Year struct {
 
 // Month contains 1 month's calendar info including Lunar info
 type Month struct {
+	Yr    int     //公历年份
 	Num   int     //公历月份
 	D0    float64 //月首儒略日数
 	Dn    int     //本月的天数
@@ -65,6 +68,7 @@ type Day struct {
 	Week  int     // 星期
 	Weeki int     // 在本月中的周序号
 	XZ    int     // 星座序号
+
 	// 农历信息
 	LDN    int  //所在农历月内日数
 	LMN    int  //农历月数
@@ -447,6 +451,7 @@ func MonthCalendar(y, m int, AD bool, ly *LunarYear) (*Month, error) {
 	}
 	jdN0 := calendarToJD(y, m, 1.5)
 	var month Month
+	month.Yr = y
 	month.Num = m   //公历月份
 	month.D0 = jdN0 //月首儒略日数
 	cnt := monthDayCnt[m-1]
@@ -599,4 +604,125 @@ func chkNum(y, m, d int, AD, lunar bool) (int, error) {
 		return y, errDateNumExceed
 	}
 	return y, nil
+}
+
+func (m Month) SVG(w, h int, path string) error {
+	y := m.Yr
+	prefix := "公元"
+	if y <= 0 {
+		y = -y + 1
+		prefix += "前"
+	}
+	fileName := fmt.Sprintf("%s%d%s%d%s", prefix, y, "年", m.Num, "月")
+	f, err := os.Create(path + fileName + ".svg")
+	if err != nil {
+		return fmt.Errorf("can not create svg file %s: %v", fileName, err)
+	}
+	defer f.Close()
+	canvas := svg.New(f)
+
+	unitSize, identX, identY := getUnitSize(w, h)
+	titleSize := unitSize / 2
+	contentSize := unitSize / 3
+	canvas.Start(w, h)
+	// Title
+	style := fmt.Sprintf("font-size:%dpt;fill:black;text-anchor:middle", titleSize)
+	x0, y0 := w/2, unitSize-(unitSize-titleSize)/2+identY
+	canvas.Text(x0, y0, fileName, style)
+	// WeekName
+	y0 += unitSize
+	for i := 0; i < 7; i++ {
+		var style = style
+		if i == 0 || i == 6 {
+			style = fmt.Sprintf("font-size:%dpt;fill:red;text-anchor:middle", titleSize)
+		}
+		canvas.Text(identX+2*unitSize*(i+1), y0, weekName[i], style)
+	}
+	// Days
+	y0 = 2*unitSize + unitSize - (unitSize-contentSize)/2
+	k := 1
+	cnt := 7 - m.Week0
+	lineStX := 2*unitSize*m.Week0 + unitSize + unitSize + identX
+Loop:
+	for i := 0; i < m.WeekN; i++ {
+
+		if i > 0 {
+			cnt = 7
+			lineStX = 2*unitSize + identX
+		}
+
+		for j := 0; j < cnt; j++ {
+			day := m.Days[k-1]
+			if day.Week == 0 || day.Week == 6 {
+				style = fmt.Sprintf("font-size:%dpt;fill:red;text-anchor:middle", contentSize)
+			} else {
+				style = fmt.Sprintf("font-size:%dpt;fill:black;text-anchor:middle", contentSize)
+			}
+			s1, s2 := getDayStr(day)
+			canvas.Text(lineStX+2*unitSize*j, y0, s1, style)
+			y0 += unitSize
+			canvas.Text(lineStX+2*unitSize*j, y0, s2, style)
+			y0 -= unitSize
+			k++
+			if k > m.Dn {
+				y0 += 2 * unitSize
+				break Loop
+			}
+		}
+		y0 += 2 * unitSize
+	}
+	// Terms
+	style = fmt.Sprintf("font-size:%dpt;fill:blue;text-anchor:left", contentSize)
+	for _, t := range m.Terms {
+		_, _, day := julian.JDToCalendar(beijingTime(t.JDPlus))
+		z, f := math.Modf(day)
+		d := int(z)
+		tm := unit.TimeFromDay(f)
+		canvas.Text(2*unitSize+identX-contentSize, y0, fmt.Sprintf("%s：%d日 %s", t.Name, d, sexa.FmtTime(tm)), style)
+		y0 += unitSize
+	}
+	// canvas.Grid(identX, identY, w, h, unitSize, "stroke:black")
+	canvas.End()
+	return nil
+}
+
+func getUnitSize(w, h int) (unitSize, identX, identY int) {
+	x := w / 16
+	y := h / 15
+	if y <= x {
+		unitSize = y
+		identX = (w - 16*y) / 2
+		identY = 0
+		return
+	}
+	unitSize = x
+	identX = 0
+	identY = (w - 15*x) / 2
+	return
+}
+
+func getDayStr(day *Day) (s1, s2 string) {
+	s1 = fmt.Sprintf("%d", day.DN)
+	switch {
+	case day.LDN == 1:
+		if day.LMN == 1 && day.special == wuZeTian1 { //非武则天1月
+			s2 = "一月"
+		} else {
+			if day.LMleap && day.special == leap13 {
+				s2 = "十三月"
+			} else {
+				s2 = monthName[day.LMN-1]
+			}
+		}
+		if day.LMleap {
+			if day.special == after9 {
+				s2 = "后" + s2
+			} else {
+				s2 = "闰" + s2
+			}
+		}
+	default:
+		s2 = dayName[day.LDN-1]
+	}
+	return
 }
