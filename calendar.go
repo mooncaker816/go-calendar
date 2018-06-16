@@ -606,7 +606,8 @@ func chkNum(y, m, d int, AD, lunar bool) (int, error) {
 	return y, nil
 }
 
-func (m Month) SVG(w, h int, path string) error {
+func (m Month) SVG(w, h int, path string, bg string) error {
+
 	y := m.Yr
 	prefix := "公元"
 	if y <= 0 {
@@ -625,6 +626,11 @@ func (m Month) SVG(w, h int, path string) error {
 	titleSize := unitSize / 2
 	contentSize := unitSize / 3
 	canvas.Start(w, h)
+
+	// Background
+	// if len(bg) > 0 {
+	canvas.Image(0, 0, w, h, bg, "preserveAspectRatio=\"none meet\"")
+	// }
 	// Title
 	style := fmt.Sprintf("font-size:%dpt;fill:black;text-anchor:middle", titleSize)
 	x0, y0 := w/2, unitSize-(unitSize-titleSize)/2+identY
@@ -681,6 +687,8 @@ Loop:
 		canvas.Text(2*unitSize+identX-contentSize, y0, fmt.Sprintf("%s：%d日 %s", t.Name, d, sexa.FmtTime(tm)), style)
 		y0 += unitSize
 	}
+
+	// canvas.Rect(0, 0, w, h, "mask:url(#imgmask)")
 	// canvas.Grid(identX, identY, w, h, unitSize, "stroke:black")
 	canvas.End()
 	return nil
