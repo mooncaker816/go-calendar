@@ -688,7 +688,7 @@ Loop:
 
 func getUnitSize(w, h int) (unitSize, identX, identY int) {
 	x := w / 16
-	y := h / 15
+	y := h / 16
 	if y <= x {
 		unitSize = y
 		identX = (w - 16*y) / 2
@@ -697,21 +697,25 @@ func getUnitSize(w, h int) (unitSize, identX, identY int) {
 	}
 	unitSize = x
 	identX = 0
-	identY = (w - 15*x) / 2
+	identY = (w - 16*x) / 2
 	return
 }
 
 func getDayStr(day *Day) (s1, s2 string) {
 	s1 = fmt.Sprintf("%d", day.DN)
+	lmSize := "小"
+	if day.LMDn == 30 {
+		lmSize = "大"
+	}
 	switch {
 	case day.LDN == 1:
 		if day.LMN == 1 && day.special == wuZeTian1 { //非武则天1月
-			s2 = "一月"
+			s2 = "一月" + lmSize
 		} else {
 			if day.LMleap && day.special == leap13 {
-				s2 = "十三月"
+				s2 = "十三月" + lmSize
 			} else {
-				s2 = monthName[day.LMN-1]
+				s2 = monthName[day.LMN-1] + lmSize
 			}
 		}
 		if day.LMleap {
