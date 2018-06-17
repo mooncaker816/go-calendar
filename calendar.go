@@ -606,6 +606,7 @@ func chkNum(y, m, d int, AD, lunar bool) (int, error) {
 	return y, nil
 }
 
+// SVG generates a svg file of the month according to the width,height,path and backgroud provided.
 func (m Month) SVG(w, h int, path string, bg string) error {
 
 	y := m.Yr
@@ -737,4 +738,20 @@ func getDayStr(day *Day) (s1, s2 string) {
 		s2 = dayName[day.LDN-1]
 	}
 	return
+}
+
+// SVG generates the SVGs of the whole year according to the width,height,path and backgroud provided.
+func (y Year) SVG(w, h int, path string, bgPath ...string) error {
+	bgNum := len(bgPath)
+	var bg string
+	for i := 0; i < 12; i++ {
+		if bgNum > 0 {
+			bg = bgPath[i%bgNum]
+		}
+		err := y.Months[i].SVG(w, h, path, bg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

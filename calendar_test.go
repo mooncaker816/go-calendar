@@ -312,7 +312,7 @@ func ExampleMonthCalendar() {
 			return
 		}
 		fmt.Println(month)
-		month.SVG(800, 600, "", "http://oumnldfwl.bkt.clouddn.com/timg-2.jpeg")
+		month.SVG(800, 600, "svg/", "http://oumnldfwl.bkt.clouddn.com/timg-2.jpeg")
 	}
 	// Output:
 	//📅                    6月
@@ -418,6 +418,14 @@ func ExampleYearCalendar() {
 		return
 	}
 	fmt.Println(year)
+	bgs := []string{
+		"http://oumnldfwl.bkt.clouddn.com/timg.jpeg",
+		"http://oumnldfwl.bkt.clouddn.com/timg-2.jpeg",
+	}
+	err = year.SVG(800, 600, "svg/", bgs...)
+	if err != nil {
+		fmt.Println(err)
+	}
 	// Output:
 	//🗓️                 2017年（平）
 	//📅                    1月
