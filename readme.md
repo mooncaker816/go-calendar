@@ -285,7 +285,28 @@ JD 2458276
 冬至：22日 27ᵐ56ˢ
 ```
 
-## 8. 精度
+## 8. 生成SVG月历，年历
+
+生成`Year`或`Month`后，可以调用`SVG`方法来生成相应的年历和月历。  
+
+```go
+	year, err := YearCalendar(2017, true)
+	if err != nil {
+		fmt.Printf("YearCalendar failed:%v\n", err)
+		return
+	}
+	fmt.Println(year)
+	bgs := []string{
+		"http://oumnldfwl.bkt.clouddn.com/timg.jpeg",
+		"http://oumnldfwl.bkt.clouddn.com/timg-2.jpeg",
+	}
+	err = year.SVG(800, 600, "svg/", bgs...)
+	if err != nil {
+		fmt.Println(err)
+	}
+```
+
+## 9. 精度
 
 推荐1654到未来200年间，精度较高，以下是与寿星天文历的相对误差，可作参考
 
