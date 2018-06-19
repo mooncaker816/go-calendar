@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/mooncaker816/go-calendar.svg?branch=master)](https://travis-ci.org/mooncaker816/go-calendar) [![GoDoc](https://godoc.org/github.com/mooncaker816/go-calendar?status.svg)](https://godoc.org/mooncaker816/go-calendar)
 
-## 1. 安装
+## 1. Install
 
 ### 1.1 VSOP87
 
@@ -16,24 +16,28 @@ Below command is suffcient to install this library, it will get all the packages
 
 `go get github.com/mooncaker816/go-calendar/...`
 
-## 2. 一些程序选用的定历规则
+## 2. Scope
+
+Recommend: B.C. 722 - A.D. 3000
+
+## 3. Some principles
 
 - 朔气同日，朔在前
 - 纪年干支以春节为界，纪月干支以朔日为界（闰月同上月）
 - 四柱：年柱以立春为界，月柱以节为界，日柱以零点为界，时柱以北京时间为准，未考虑地方时
 
-## 3. 农历转阳历`LunarToSolar`
+## 4. Convert Chinese Lunar Calendar to Julian/Gregorian Calendar `LunarToSolar`
 
 1. 正月-十二月依次对应月份值1-12，若为闰月，置 leap 标记为 true
 2. 若查询的是武则天改历期间的农历正月，由于有一月的并存，请以11作为正月的值输入，其他不变
 3. 若查询的是秦历后九月，周历闰十三月当作闰九月和闰十二月处理，对应的月份值分别为9，12
 
-## 4. 阳历转农历`SolarToLunar`
+## 5. Convert Julian/Gregorian Calendar to Chinese Lunar Calendar `SolarToLunar`
 
 1. 若输入的阳历日期在1582年10月4日之前（包含），则以儒略历日期计算农历，反之以格里历计算
 2. 函数返回农历年，月，日，以及闰月标志
 
-## 5. 日历`DayCalendar`
+## 6. Get day information `DayCalendar`
 
 ```go
 	day, err := DayCalendar(2018, 6, 6, true, nil)
@@ -53,7 +57,7 @@ JD 2458276
 四柱：戊戌 戊午 己巳 甲子
 ```
 
-## 6. 月历`MonthCalendar`
+## 7. Get Month information `MonthCalendar`
 
 ```go
 	month, err := MonthCalendar(1998, 6, true, nil)
@@ -82,7 +86,9 @@ JD 2458276
 夏至：21日 22ʰ2ᵐ35ˢ
 ```
 
-## 7. 年历`YearCalendar`
+![](./公元1998年6月.svg)
+
+## 8. Get Year information `YearCalendar`
 
 ```go
 	year, err := YearCalendar(2017, true)
@@ -283,7 +289,28 @@ JD 2458276
 冬至：22日 27ᵐ56ˢ
 ```
 
-## 8. 精度
+## 9. Generate SVG of Month/Year information
+
+生成`Year`或`Month`后，可以调用`SVG`方法来生成相应的年历和月历。  
+
+```go
+	year, err := YearCalendar(2017, true)
+	if err != nil {
+		fmt.Printf("YearCalendar failed:%v\n", err)
+		return
+	}
+	fmt.Println(year)
+	bgs := []string{
+		"http://oumnldfwl.bkt.clouddn.com/timg.jpeg",
+		"http://oumnldfwl.bkt.clouddn.com/timg-2.jpeg",
+	}
+	err = year.SVG(800, 600, "svg/", bgs...)
+	if err != nil {
+		fmt.Println(err)
+	}
+```
+
+## 10. Accuracy
 
 推荐1654到未来200年间，精度较高，以下是与寿星天文历的相对误差，可作参考
 
